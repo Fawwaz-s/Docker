@@ -1,0 +1,52 @@
+DevOps is a development methodology aimed at bridging the gap between Development and Operations, emphasizing communication and collaboration,
+continuous integration, quality assurance and delivery with automated deployment utilizing a set of development practices. (Jabbari et al.)
+Development: Plan, create, verify, package => Operation: Configure $ Monitor
+
+Docker is a set of platform-as-a-service (PaaS) products that use OS-level virtualization to deliver software in packages called containers.
+# Docker is a set of tools to deliver software in containers.
+# Containers are packages of software
+
+Virtualization is a technology that allows you to create multiple simulated environments or dedicated resources from a single, physical hardware system.
+
+The Hypervisor
+At the heart of virtualization is a thin layer of software called a Hypervisor (or Virtual Machine Monitor).
+The physical machine is called the Host, and the virtual environments created inside it are called Guests (or Virtual Machines / VMs). 
+The hypervisor acts like a traffic cop or resource manager. It sits between the physical hardware and the VMs, intercepting requests from the VMs 
+and allocating a slice of the host's CPU, memory, storage, and networking resources to each guest so they don't interfere with one another.
+
+Each VM includes a full operating system (OS) along with the necessary binaries and libraries, making them heavier and more resource-intensive.
+Containers, on the other hand, share the host OS kernel and only package the application and its dependencies, resulting in a more lightweight and efficient solution.
+syntax * docker container run <image> * docker run <image>
+        # instructs the daemon to create a container from the image and download the image if it is not available
+* docker container run hello-world #hello-world is the app name 
+ #short-handed to docker run hello-world
+ * docker container ls -a | grep hello-world 
+
+ *docker run -it ubuntu bash
+  # -i (--interactive) — Keeps standard input (STDIN) open so you can type commands.
+  # -t (--tty) — Allocates a terminal, giving you a shell experience.
+  # ubuntu — The image to use. If it isn't already on your computer, Docker will automatically download the latest Ubuntu image from Docker Hub.
+  # bash — The command to run inside the container.
+
+IMAGE
+An image and a container runtime (Docker engine) are needed to create a container
+ # an image is like a blueprint or template, and the building material, while a container is an instance of that blueprint or template.
+ #  The image provides all the necessary instructions and dependencies for the container to run. 
+ # A Docker image is a file. An image never changes; you can not edit an existing file. 
+ # Creating a new image happens by starting from a base image and adding new layers to it. 
+* docker image ls #list all image
+ This image file is built from an instructional file named Dockerfile that is parsed when you run docker image build run:
+ (syntax) * docker buildx build [OPTIONS] PATH | URL | 
+dockerfile contains the blueprint to create images, just like images are for containers, the only difference is that Dockerfile is written by the user and image by the machine
+
+Container​
+Containers contain the application and what is required to execute it (dependencies); they can be started, stopped, and interacted with. 
+They are isolated environments on the host machine, capable of interacting with each other and with the host machine itself via defined methods (TCP/UDP).
+* docker container ls -a #lists all available containers, without -a flag, it just lists the running containers
+* docker ps -a #short hand 
+*  docker container rm 3d # imagine container's ID is 3d4bab29dd67, using the first few characters of an ID
+* docker container rm id1 id2 id3 #multiple argument
+
+The CLI interacts with the "Docker Engine" which is made up of 3 components:
+ - the Docker daemon, the Rest API, and the CLI client(command line interface)
+
