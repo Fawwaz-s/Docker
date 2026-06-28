@@ -1,5 +1,5 @@
 DevOps is a development methodology aimed at bridging the gap between Development and Operations, emphasizing communication and collaboration,
-continuous integration, quality assurance and delivery with automated deployment utilizing a set of development practices. (Jabbari et al.)
+continuous integration, quality assurance, and delivery with automated deployment utilizing a set of development practices. (Jabbari et al.)
 Development: Plan, create, verify, package => Operation: Configure $ Monitor
 
 Docker is a set of platform-as-a-service (PaaS) products that use OS-level virtualization to deliver software in packages called containers.
@@ -20,11 +20,12 @@ syntax * docker container run <image> * docker run <image>
         # instructs the daemon to create a container from the image and download the image if it is not available
 * docker container run hello-world #hello-world is the app name 
  #short-handed to docker run hello-world
- * docker container ls -a | grep hello-world 
+ * docker container ls -a | grep hello-world
+ * docker container prune #removes all stopped container 
 
  *docker run -it ubuntu bash
   # -i (--interactive) — Keeps standard input (STDIN) open so you can type commands.
-  # -t (--tty) — Allocates a terminal, giving you a shell experience.
+  # -t (--tty) — Allocates a terminal, giving you a shell experience. #without it, you will be stuck in the terminal.
   # ubuntu — The image to use. If it isn't already on your computer, Docker will automatically download the latest Ubuntu image from Docker Hub.
   # bash — The command to run inside the container.
 
@@ -36,7 +37,10 @@ An image and a container runtime (Docker engine) are needed to create a containe
  # Creating a new image happens by starting from a base image and adding new layers to it. 
 * docker image ls #list all image
  This image file is built from an instructional file named Dockerfile that is parsed when you run docker image build run:
- (syntax) * docker buildx build [OPTIONS] PATH | URL | 
+ (syntax) * docker buildx build [OPTIONS] PATH | URL |
+ * docker image prune #removes all Dangling images, Dangling images are images that don't have a name and are not used.
+ * docker image pull hello-world # pull command downloads the images without running them
+ 
 dockerfile contains the blueprint to create images, just like images are for containers, the only difference is that Dockerfile is written by the user and image by the machine
 
 Container​
@@ -46,6 +50,44 @@ They are isolated environments on the host machine, capable of interacting with 
 * docker ps -a #short hand 
 *  docker container rm 3d # imagine container's ID is 3d4bab29dd67, using the first few characters of an ID
 * docker container rm id1 id2 id3 #multiple argument
+* docker run -d nginx #-d flags means run nginx in the background, without it, this will take up the entire terminal
+* docker run -d -p 8080:80 nginx #Starts Nginx in the background and makes it accessible at http://localhost:8080.
+* docker container rm <container NAME> # this will not work because the container is working in the background until :
+* docker container stop <container NAME> #this stops the container
+* docker container rm --force <container NAME> #this forcefully safely deletes running containers
+* docker run -it -d --name iwemida ubuntu sh -c ' while true; do date; sleep 3; done'
+ # --name iwemida _ this overrides the feature that assigns random names and forces "iwemida"
+ # ubuntu - this is the image ran to form a container, It's a lightweight, stripped-down version of the standard Ubuntu Linux OS
+ # sh -c '...' _ By default, an Ubuntu container launches into a plain shell or does nothing and exits. This parameter tells Docker: 
+   "Don't run the default command. Instead, open a standard Linux shell (sh) and execute the following string of commands (-c)."
+ #'while true; do date; sleep 1; done' _This is a classic Linux infinite bash loop broken down into four parts:
+    -while true; – Start a loop that runs forever because the condition "true" is always true.
+    -do date; – Print the current system date and time to the standard output.
+    -sleep 1; – Pause the script execution for exactly 1 second.
+    done – Marks the end of the loop iteration, telling it to go back to the top and repeat.
+ TO INTERACT WITH IT
+ * docker pause iwemida  & * docker unpause iwemida #this pauses and unpauses the container
+ * docker start iwemida #this restarts stopped container - docker start cont1 cont2 ..
+ * docker attach iwemida #reconnects your terminal to the container. either it was -d detached or you using another window
+ * docker attach --no-stdin mycontainer # connects but cuts out stdin(your keyboard) - usecase: for watching log file and muting yourself incase you accidentally press a button
+ * docker logs  -f iwemida #-f flag means follow, so new log lines keep appearing in real time # the code shows the logs of the container.
+
+
+
+Most used commands:​
+  command 	                                   explain     	                                shorthand
+docker image ls	                                 Lists all images	                         docker images
+docker image rm <image name or id>	          Removes an image	                         docker rmi
+docker image pull <image name or id>	          Pulls image from a docker registry             docker pull
+docker container ls -a	                          Lists all containers          	         docker ps -a
+docker container run <image name or id>     	  Runs a container from an image                 docker run
+docker container rm <container name or id>	   Removes a container	                         docker rm
+docker container stop <container name or id>	   Stops a container	                         docker stop
+docker container exec <container name or id>	   Executes a command inside the container 	 docker exec
+
+
+
+*
 
 The CLI interacts with the "Docker Engine" which is made up of 3 components:
  - the Docker daemon, the Rest API, and the CLI client(command line interface)
