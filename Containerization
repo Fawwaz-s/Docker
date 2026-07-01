@@ -83,9 +83,19 @@ WORKING WITHIN A RUNNING CONTAINER
  *docker exec iwemida df -h #check disk usage
  *docker exec iwemida env #See all environment variables the container is using
  *docker exec iwemida curl http://localhost #curl request from localhost (container itself) - use case: if there is a web server inside, it fetches the webpage
- *docker exec iwemida ping google.com #
-
-
+ *docker exec iwemida ping google.com #Creates a file inside the running container.
+ *docker exec iwemida python script.py #if python is installed, it runs the script without ending the container
+ * docker kill iwemida # This command forcefully stops the main process inside the running container, sends SIGKILL immediately (or another signal if specified)
+ *docker stop iwemida #Sends SIGTERM, waits (default 10s), then SIGKILL if still running
+   #SIGTERM is a request. The process gets a chance to: Save unsaved data, Close open files/connections cleanly, Notify other systems it's shutting down,
+  Run any custom cleanup logic, even choose to ignore the signal and keep running (gives well-behaved apps to shut down cleanly), else SEGKILL:
+   #SEGKILL is an order. It goes straight to the OS kernel and ends the process out of memory instantly. 
+     -The process: Gets zero warning. Cannot run any cleanup code, Cannot catch or block it — this is by design, so a truly stuck/unresponsive process can always be terminated
+        #*docker stop -t 30 xxx   # give it 30 seconds before force-killing
+ *docker kill iwemida #Sends SIGKILL immediately (or another signal if specified)
+ * docker rm looper # command deletes the container entirely. It removes the container's filesystem, its logs, its network settings, and its metadata from your Docker host.
+  # rm can't remove a working container except force delete: docker rm -f jap
+ 
 
 
 
