@@ -62,12 +62,18 @@ They are isolated environments on the host machine, capable of interacting with 
     -do date; – Print the current system date and time to the standard output.
     -sleep 1; – Pause the script execution for exactly 1 second.
     done – Marks the end of the loop iteration, telling it to go back to the top and repeat.
+
+ * docker run -d --rm -it --name iwemida ubuntu sh -c 'while true; do date; sleep 1; done'
+ # --rm - Automatically deletes the container after it stops.
+(Ctrl + P, then Ctrl + Q) - This safely detaches your terminal screen and drops you back onto your host machine's command line,
+ leaving the container ticking away silently.
+ 
  TO INTERACT WITH IT
  * docker pause iwemida  & * docker unpause iwemida #this pauses and unpauses the container
  * docker start iwemida #this restarts stopped container - docker start cont1 cont2 ..
  * docker attach iwemida #reconnects your terminal to the container. either it was -d detached or you using another window
- * docker attach --no-stdin mycontainer # connects but cuts out stdin(your keyboard) - usecase: for watching log file and muting yourself incase you accidentally press a button
- * docker logs  -f iwemida #-f flag means follow, so new log lines keep appearing in real time # the code shows the logs of the container.
+ * docker attach --no-stdin iwemida # connects but cuts out stdin(your keyboard) - usecase: for watching log file and muting yourself incase you accidentally press a button
+ * docker logs  -f iwemida #-f flag means follow (LIVE), so new log lines keep appearing in real time # the code shows the logs of the container.
 
 WORKING WITHIN A RUNNING CONTAINER
  * docker exec iwemida ls -la  #exec means: Run a new command inside an already running container.
