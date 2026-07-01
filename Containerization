@@ -52,9 +52,6 @@ They are isolated environments on the host machine, capable of interacting with 
 * docker container rm id1 id2 id3 #multiple argument
 * docker run -d nginx #-d flags means run nginx in the background, without it, this will take up the entire terminal
 * docker run -d -p 8080:80 nginx #Starts Nginx in the background and makes it accessible at http://localhost:8080.
-* docker container rm <container NAME> # this will not work because the container is working in the background until :
-* docker container stop <container NAME> #this stops the container
-* docker container rm --force <container NAME> #this forcefully safely deletes running containers
 * docker run -it -d --name iwemida ubuntu sh -c ' while true; do date; sleep 3; done'
  # --name iwemida _ this overrides the feature that assigns random names and forces "iwemida"
  # ubuntu - this is the image ran to form a container, It's a lightweight, stripped-down version of the standard Ubuntu Linux OS
@@ -91,11 +88,13 @@ WORKING WITHIN A RUNNING CONTAINER
   Run any custom cleanup logic, even choose to ignore the signal and keep running (gives well-behaved apps to shut down cleanly), else SEGKILL:
    #SEGKILL is an order. It goes straight to the OS kernel and ends the process out of memory instantly. 
      -The process: Gets zero warning. Cannot run any cleanup code, Cannot catch or block it — this is by design, so a truly stuck/unresponsive process can always be terminated
-        #*docker stop -t 30 xxx   # give it 30 seconds before force-killing
+        # *docker stop -t 30 xxx   # give it 30 seconds before force-killing
  *docker kill iwemida #Sends SIGKILL immediately (or another signal if specified)
- * docker rm looper # command deletes the container entirely. It removes the container's filesystem, its logs, its network settings, and its metadata from your Docker host.
-  # rm can't remove a working container except force delete: docker rm -f jap
- 
+ * docker rm iwemida # command deletes the container entirely. It removes the container's filesystem, its logs, its network settings, and its metadata from your Docker host.
+  # rm can't remove a working container except force delete:
+ * docker rm -f iwemida or docker rm --force iwemida
+ FOR CONTEXT: *docker kill iwemida && docker rm iwemida is equivalent to *docker rm --force iwemida 
+   # This is because when kill is run, it stops but keeps the container & can be restarted with: *docker start iwemida
 
 
 
