@@ -72,6 +72,21 @@ They are isolated environments on the host machine, capable of interacting with 
  * docker attach --no-stdin mycontainer # connects but cuts out stdin(your keyboard) - usecase: for watching log file and muting yourself incase you accidentally press a button
  * docker logs  -f iwemida #-f flag means follow, so new log lines keep appearing in real time # the code shows the logs of the container.
 
+WORKING WITHIN A RUNNING CONTAINER
+ * docker exec iwemida ls -la  #exec means: Run a new command inside an already running container.
+   #ls -la : - l flag -> long format (instead of just names, it prints type, size, permission, etc.), -a flag -> all
+ * docker exec -it iwemida bash #opens a bash terminal in the container
+ *docker exec -it iwemida sh #sh is more universal 
+ *docker exec iwemida ls -la /usr/share/nginx/html #list all files in a path (to check if a file is missing)
+ *docker exec iwemida cat /var/log/read.log #cat a file in a path (read a log file or check configuration files)
+ *docker exec iwemida ps auxf #checks running processes in a container #can be run -it iwemida bash new terminal _ ps auxf
+ *docker exec iwemida df -h #check disk usage
+ *docker exec iwemida env #See all environment variables the container is using
+ *docker exec iwemida curl http://localhost #curl request from localhost (container itself) - use case: if there is a web server inside, it fetches the webpage
+ *docker exec iwemida ping google.com #
+
+
+
 
 
 Most used commands:​
