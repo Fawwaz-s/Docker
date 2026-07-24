@@ -100,8 +100,15 @@ WORKING WITHIN A RUNNING CONTAINER
   # rm can't remove a working container except force delete:
  * docker rm -f iwemida or docker rm --force iwemida
  FOR CONTEXT: *docker kill iwemida && docker rm iwemida is equivalent to *docker rm --force iwemida 
-   # This is because when kill is run, it stops but keeps the container & can be restarted with: *docker start iwemida
+   # This is because when kill is run, it stops but keeps the container & can be restarted with: *docker start iwemida.
 
+INSIDE A CONTAINER
+* docker run -it -d --name iwemida ubuntu #ran an interactive container
+* apt-get update #Golden rule, it refreshes app store inventory, download the latest package list
+* apt-get -y install curl #downloads a command into the container 
+*  sh -c 'while true; do echo "Input website:"; read website; echo "Searching.."; sleep 1; curl http://$website; done'
+ # infinite loop inside a shell script that repeatedly prompts you for a website name, makes an HTTP request to that site using curl,
+      prints out the response, and then starts all over again.
 
 
 Most used commands:​
@@ -118,7 +125,6 @@ docker container exec <container name or id>	   Executes a command inside the co
 
 
 *
-
 The CLI interacts with the "Docker Engine" which is made up of 3 components:
  - the Docker daemon, the Rest API, and the CLI client(command line interface)
 
