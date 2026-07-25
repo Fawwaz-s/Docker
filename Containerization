@@ -16,6 +16,39 @@ and allocating a slice of the host's CPU, memory, storage, and networking resour
 
 Each VM includes a full operating system (OS) along with the necessary binaries and libraries, making them heavier and more resource-intensive.
 Containers, on the other hand, share the host OS kernel and only package the application and its dependencies, resulting in a more lightweight and efficient solution.
+
+PODMAN
+Docker and Podman are similar in what they do, but they differ in how they run containers. Docker uses a background daemon, while Podman is daemonless 
+and rootless by default, which often makes Podman attractive for security-focused Linux setups.
+
+Main differences
+- Docker has the bigger ecosystem and is very common in tutorials, CI/CD, and developer workflows.
+- Podman is more Linux-native, with strong systemd and Kubernetes integration.
+- Podman can often use Docker-like commands, so the learning curve is small.
+- Docker still has very broad support and is often the easier choice for beginners and team consistency.
+
+Which one to use:
+Use Docker if you want the most common tool, lots of documentation, and easy collaboration with others.
+Use Podman if you want rootless containers, no daemon, and a more security-oriented Linux workflow.
+
+Common commands
+Task             	          Docker	               Podman
+Run a container	                docker run nginx	    podman run nginx
+List running containers  	docker ps	            podman ps
+List all containers	        docker ps -a	            podman ps -a
+Stop a container                docker stop mycontainer	    podman stop mycontainer
+Start a stopped container	docker start mycontainer    podman start mycontainer
+Remove a container	        docker rm mycontainer	    podman rm mycontainer
+List images	                docker images	            podman images
+Remove an image	               docker rmi nginx   	    podman rmi nginx
+Show logs	               docker logs mycontainer	    podman logs mycontainer
+Shell into a container	      docker exec -it --name cer bash	 podman exec -it --name cer bash
+
+NB.  Unlike Docker, which defaults to pulling from Docker Hub (docker.io) whenever you type a short name like nginx,
+Podman does not default to any image registry out of the box for security reasons.
+ *  podman run -it --name erekere docker.io/library/nginx 
+
+DOCKER
 syntax * docker container run <image> * docker run <image>
         # instructs the daemon to create a container from the image and download the image if it is not available
 * docker container run hello-world #hello-world is the app name 
@@ -29,6 +62,7 @@ syntax * docker container run <image> * docker run <image>
   # ubuntu — The image to use. If it isn't already on your computer, Docker will automatically download the latest Ubuntu image from Docker Hub.
   # bash — The command to run inside the container.
 
+
 IMAGE
 An image and a container runtime (Docker engine) are needed to create a container
  # an image is like a blueprint or template, and the building material, while a container is an instance of that blueprint or template.
@@ -40,6 +74,20 @@ An image and a container runtime (Docker engine) are needed to create a containe
  (syntax) * docker buildx build [OPTIONS] PATH | URL |
  * docker image prune #removes all Dangling images, Dangling images are images that don't have a name and are not used.
  * docker image pull hello-world # pull command downloads the images without running them
+
+* docker search "image" #looks for container images on Docker Hub by keyword. It helps you find image names, descriptions, star counts, 
+     and whether an image is official. N.B this will only search from Docker Hub.
+* docker search quay.io/hello #to search a different registry, people use a different registry than Docker Hub for control, cost, and reliability.
+ Useful options:
+--limit 5 = show only 5 results. e.g docker search ubuntu --limit 5
+--filter stars=10 = show images with at least 10 stars.
+--filter is-official=true = show only official images.
+--no-trunc = show full descriptions.
+-- format = customize how results are displayed.
+
+* docker pull quay.io/podman/hello # docker pull is used to download an image, however quay.io.. tell linux to use that website instead of the docker default.
+  #if a tag isn't specified, Docker defaulted to latest.
+
  
 dockerfile contains the blueprint to create images, just like images are for containers, the only difference is that Dockerfile is written by the user and image by the machine
 
@@ -104,6 +152,7 @@ WORKING WITHIN A RUNNING CONTAINER
 
 INSIDE A CONTAINER
 * docker run -it -d --name iwemida ubuntu #ran an interactive container
+* RUN apt-get update && apt-get install -y curl #better than running the commands individually
 * apt-get update #Golden rule, it refreshes app store inventory, download the latest package list
 * apt-get -y install curl #downloads a command into the container 
 *  sh -c 'while true; do echo "Input website:"; read website; echo "Searching.."; sleep 1; curl http://$website; done'
