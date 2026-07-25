@@ -48,6 +48,7 @@ NB.  Unlike Docker, which defaults to pulling from Docker Hub (docker.io) whenev
 Podman does not default to any image registry out of the box for security reasons.
  *  podman run -it --name erekere docker.io/library/nginx 
 
+
 DOCKER
 syntax * docker container run <image> * docker run <image>
         # instructs the daemon to create a container from the image and download the image if it is not available
@@ -87,7 +88,10 @@ An image and a container runtime (Docker engine) are needed to create a containe
 
 * docker pull quay.io/podman/hello # docker pull is used to download an image, however quay.io.. tell linux to use that website instead of the docker default.
   #if a tag isn't specified, Docker defaulted to latest.
-
+* docker pull ubuntu:25.10 # Images can be tagged to save different versions of the same image. You define an image's tag by adding :<tag> after the image's name.
+* docker tag SOURCE_IMAGE[:TAG] TARGET_IMAGE[:TAG] #creates a new name/tag for an existing docker image, there are now two images, one with old name and another with new
+ -* docker tag ubuntu:25.10 fav_distro:questing_quokka
+   # an image name may consist of 3 parts plus a tag. Usually like the following: registry/organisation/image:tag. But may be as short as ubuntu
  
 dockerfile contains the blueprint to create images, just like images are for containers, the only difference is that Dockerfile is written by the user and image by the machine
 
