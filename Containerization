@@ -81,7 +81,7 @@ If you change the bottom layer, it has to rebuild all the layers above it (which
 - dockerfile contains the blueprint to create images, just like images are for containers, the only difference is that Dockerfile is written by the user and image by the machine
 TO CREATE A DOCKERFILE
 .....hello.sh #shell script
-#!/bin/bash
+#!/bin/sh # sh instead of bash because alpine linux is too small to recognise bash
 echo "Wati magbo"
 ....
 chmod +x hello.sh #make it executable
@@ -104,8 +104,70 @@ COPY hello.sh .
 CMD ["./hello.sh"]
 ......................
 
-* docker build -t bello . #docker build creates docker image, docker pull downloads. # -t flag is for custom name like bello # . means dockerfile in the current directory  
+* docker build -t bello . #docker build creates docker image, docker pull downloads. # -t flag is for custom name like bello # . means dockerfile in the current directory 
+------NOTE: COMMANDS IN DOCKERFILE
+WORKDIR - BASIC SYNTAX: WORKDIR /path/to/directory
+The WORKDIR instruction is used in Dockerfiles to set the working directory for any subsequent instructions (like RUN, CMD, ENTRYPOINT, COPY, and ADD).
+When Docker encounters a WORKDIR instruction, it does three things:
+    - Creates the directory if it doesn't already exist inside the container's filesystem.
+    - Changes the current directory to that path for all commands that come after it in the Dockerfile.
+    - Persists as the default directory when you run the container interactively (e.g., docker run -it my-image will drop you into this directory).
+# When you use cd instead of WORKDIR, that cd command runs in a temporary shell session. As soon as that shell session ends
+ (which happens right after the RUN command finishes), the directory resets back to where it was.
 
+RUN :  used to Execute commands to build your image layers (e.g., installing packages, compiling code, changing permissions).
+it is used at build-time (when you run docker build .) # can't be overridden, its baked in.
+ Syntax: Two forms.
+   - Shell form: RUN apt-get install -y python3 (runs in /bin/sh -c)
+   - Exec form: RUN ["apt-get", "install", "-y", "python3"] (preferred for security, no shell variable expansion).
+
+CMD (Runtime - Default) : Purpose: Provides defaults for an executing container. It tells Docker "If the user doesn't specify a command, run this."
+When it runs: At container startup (docker run).
+Can you override it at runtime? Yes, easily. If you run docker run my-image bash, the bash completely replaces the CMD.
+ Syntax:
+   - Exec form (PREFERRED): CMD ["npm", "start"]
+   - Shell form: CMD npm start (starts a sub-shell, less ideal for signal handling).
+As ENTRYPOINT parameters: CMD ["--port", "8080"] (used to pass default arguments to ENTRYPOINT).Important: If your Dockerfile has multiple CMD instructions, only the last one takes effect.
+
+ENTRYPOINT (Runtime - Immutable)
+Purpose: Configures the container to run as an executable. It defines the main program that should always run.
+When it runs: At container startup.
+Can you override it at runtime? Yes, but you must use a flag: docker run --entrypoint bash my-image.
+Syntax:
+  - Exec form (PREFERRED): ENTRYPOINT ["python", "app.py"]
+  - Shell form: ENTRYPOINT python app.py (rarely used).
+ ENTRYPOINT + CMD combination :
+ENTRYPOINT ["curl"]      # The program is ALWAYS curl #defines the static program (the binary).
+CMD ["--help"]           # If user types nothing, run "curl --help" #defines the dynamic default arguments passed to that program.
+
+RUN vs CMD vs ENTRYPOINT
+Instruction     	Time	     Can User Override?  	Use Case
+RUN	               Build	         No	              Installing dependencies (apt-get, pip install)
+CMD	               Start	       Yes (easily)	      Setting default commands or arguments
+ENTRYPOINT	       Start	     Only with --entrypoint	Defining the main application binary
+
+COPY (Simple & Safe) Purpose: The standard, safest way to copy local files into an image.
+What it does: Copies files/directories from your build context (the directory where you run docker build) to the container.
+Best Practice: Use COPY 95% of the time. It is transparent and predictable.
+Syntax: COPY <source> <destination>
+   * COPY package.json /app/ (Copies a single file)
+   * COPY . /app (Copies everything from your current directory into /app)
+
+ADD (Powerful but Risky) - Purpose: Does everything COPY does, PLUS extra automatic features.
+Extra Features:
+Auto-extract local tarballs: If you ADD myarchive.tar.gz /app/, Docker will automatically unzip/un-tar it inside the container.
+Remote URLs: You can download files from the internet directly: ADD https://example.com/file.zip /tmp/ 
+    # (Note: This is strongly discouraged because it adds an extra layer, slows down builds, and is insecure).
+When to use it: Only when you need to automatically extract a local compressed archive into the image.
+*ADD is discouraged:
+ - Lack of transparency: You might forget that a .tar.gz file gets auto-extracted, leading to unexpected folder structures.
+ - Invalidation of cache: Downloading from URLs breaks Docker's layer caching (because the remote file might change).
+ - Security: Downloading from the internet during a build is risky. Use RUN curl ... instead so you can clean up after yourself in the same layer.
+
+GOLDEN RULE: 
+- Always prefer COPY unless you explicitly need ADD's auto-extraction feature.
+- If you need a remote file, use RUN wget ... && tar -xzf ... && rm ... in a single RUN layer instead of ADD.
+-----
 
 
 * docker image ls #list all image
@@ -203,8 +265,8 @@ INSIDE A CONTAINER
 Most used commands:​
   command 	                                   explain     	                                shorthand
 docker image ls	                                 Lists all images	                         docker images
-docker image rm <image name or id>	          Removes an image	                         docker rmi
-docker image pull <image name or id>	          Pulls image from a docker registry             docker pull
+docker rmi imagename             	          Removes an image	                         docker rmi
+docker image pull     	          Pulls image from a docker registry             docker pull
 docker container ls -a	                          Lists all containers          	         docker ps -a
 docker container run <image name or id>     	  Runs a container from an image                 docker run
 docker container rm <container name or id>	   Removes a container	                         docker rm
