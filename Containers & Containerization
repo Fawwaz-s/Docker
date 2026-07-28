@@ -49,180 +49,20 @@ Podman does not default to any image registry out of the box for security reason
  *  podman run -it --name erekere docker.io/library/nginx 
 
 
-DOCKER
-syntax * docker container run <image> * docker run <image>
-        # instructs the daemon to create a container from the image and download the image if it is not available
-* docker container run hello-world #hello-world is the app name 
- #short-handed to docker run hello-world
- * docker container ls -a | grep hello-world
- * docker container prune #removes all stopped container 
+DOCKER CONTAINER
+The CLI interacts with the "Docker Engine" which is made up of 3 components:
+ - the Docker daemon, the Rest API, and the CLI client(command line interface)
 
- *docker run -it ubuntu bash
+Containers contain the application and what is required to execute it (dependencies); they can be started, stopped, and interacted with. 
+They are isolated environments on the host machine, capable of interacting with each other and with the host machine itself via defined methods (TCP/UDP).
+syntax : docker container run <image> OR  * docker run <image>
+* docker container run hello-world #hello-world is the image name  #short-handed to docker run hello-world
+ # instructs the daemon to create a container from the image and download the image if it is not available
+* docker run -it ubuntu bash
   # -i (--interactive) — Keeps standard input (STDIN) open so you can type commands.
   # -t (--tty) — Allocates a terminal, giving you a shell experience. #without it, you will be stuck in the terminal.
   # ubuntu — The image to use. If it isn't already on your computer, Docker will automatically download the latest Ubuntu image from Docker Hub.
-  # bash — The command to run inside the container.
-
-
-IMAGE
-An image and a container runtime (Docker engine) are needed to create a container
- # an image is like a blueprint or template, and the building material, while a container is an instance of that blueprint or template.
- #  The image provides all the necessary instructions and dependencies for the container to run. 
- # A Docker image is a file. An image never changes; you can not edit an existing file. 
- # Creating a new image happens by starting from a base image and adding new layers to it. 
-DOCKERFILE
-Dockerfile = Instructions for building a completely self-contained, portable computer environment.
-You define what should be included in the image with different instructions. We'll learn about the best practices here by creating one.
-
-The Golden Rule of Dockerfiles:
-Every line in a Dockerfile (except comments) creates a "layer" on top of the previous one. Docker caches these layers. 
-If you change the bottom layer, it has to rebuild all the layers above it (which is why we combine update and install into one line to save time!).
-
-- dockerfile contains the blueprint to create images, just like images are for containers, the only difference is that Dockerfile is written by the user and image by the machine
-TO CREATE A DOCKERFILE -> IMAGE -> CONTAINER
-.....hello.sh  #shell script file to be run
-#!/bin/sh # sh instead of bash because alpine linux is too small to recognise bash
-echo "Wati magbo"
-....
-chmod +x hello.sh #make it executable
-...
-
-............... Dockerfile #not dockerfile-its cap sensitive
-# Start from the alpine image that is smaller but no fancy tools
-FROM alpine:3.21
-
-# Use /usr/src/app as our workdir. The following instructions will be executed in this location.
-WORKDIR /usr/src/app
-
-# Copy the hello.sh file from this directory to /usr/src/app/ creating /usr/src/app/hello.sh
-COPY hello.sh .
-
-# Alternatively, if we skipped chmod earlier, we can add execution permissions during the build.
-# RUN chmod +x hello.sh
-
-# When running docker run the command will be ./hello.sh
-CMD ["./hello.sh"]
-#each step is called a layer, Each layer contains only the changes (added files, deleted files, or updated packages) made since the previous layer.
-#the more the steps, the heavier and space consuming.
-#dockerfile use memory caching; instead of running every dockerfile from the scratch, if looks to similarities between that and the previous dockerfile,
-  skips layers with the same commands and files, and just rebuilds the new changes.
-...................... TO BUILD IMAGE
-* docker build -t bello . #docker build creates docker image, docker pull downloads. # -t flag is for custom name like bello # . means dockerfile in the current directory
-............ 
-docker run bello #creates the container
-.......MANUALLY CREATING A NEW LAYER ON TOP OF AN IMAGE, COPY A FILE INTO THE CONTAINER
- * docker cp ./add.txt comp_jon:/usr/src/app #./add.txt - a txt file from the current directory #comp_jon-name of container (docker container ls -a)
- # /usr/src/app - path of the WORKDIR
-*docker exec -it comp_jon sh #this open an interactive shell container #using docker run bello - will create a new container every time. open a container with exec 
-* docker start comp_jon #if the above command doesn't work because the container is not running.
-* docker diff comp_jon # output: C /root A /root/.ash_history etc 
- #The character in front of the file name indicates the type of the change in the container's filesystem: A = added, D = deleted, C = changed. 
-
-------NOTE: COMMANDS IN DOCKERFILE
-WORKDIR - BASIC SYNTAX: WORKDIR /path/to/directory
-The WORKDIR instruction is used in Dockerfiles to set the working directory for any subsequent instructions (like RUN, CMD, ENTRYPOINT, COPY, and ADD).
-When Docker encounters a WORKDIR instruction, it does three things:
-    - Creates the directory if it doesn't already exist inside the container's filesystem.
-    - Changes the current directory to that path for all commands that come after it in the Dockerfile.
-    - Persists as the default directory when you run the container interactively (e.g., docker run -it my-image will drop you into this directory).
-# When you use cd instead of WORKDIR, that cd command runs in a temporary shell session. As soon as that shell session ends
- (which happens right after the RUN command finishes), the directory resets back to where it was.
-
-RUN :  used to Execute commands to build your image layers (e.g., installing packages, compiling code, changing permissions).
-it is used at build-time (when you run docker build .) # can't be overridden, its baked in.
- Syntax: Two forms.
-   - Shell form: RUN apt-get install -y python3 (runs in /bin/sh -c)
-   - Exec form: RUN ["apt-get", "install", "-y", "python3"] (preferred for security, no shell variable expansion).
-
-CMD (Runtime - Default) : Purpose: Provides defaults for an executing container. It tells Docker "If the user doesn't specify a command, run this."
-When it runs: At container startup (docker run).
-Can you override it at runtime? Yes, easily. If you run docker run my-image bash, the bash completely replaces the CMD.
- Syntax:
-   - Exec form (PREFERRED): CMD ["npm", "start"]
-   - Shell form: CMD npm start (starts a sub-shell, less ideal for signal handling).
-As ENTRYPOINT parameters: CMD ["--port", "8080"] (used to pass default arguments to ENTRYPOINT).Important: If your Dockerfile has multiple CMD instructions, only the last one takes effect.
-
-ENTRYPOINT (Runtime - Immutable)
-Purpose: Configures the container to run as an executable. It defines the main program that should always run.
-When it runs: At container startup.
-Can you override it at runtime? Yes, but you must use a flag: docker run --entrypoint bash my-image.
-Syntax:
-  - Exec form (PREFERRED): ENTRYPOINT ["python", "app.py"]
-  - Shell form: ENTRYPOINT python app.py (rarely used).
- ENTRYPOINT + CMD combination :
-ENTRYPOINT ["curl"]      # The program is ALWAYS curl #defines the static program (the binary).
-CMD ["--help"]           # If user types nothing, run "curl --help" #defines the dynamic default arguments passed to that program.
-
-RUN vs CMD vs ENTRYPOINT
-Instruction     	Time	     Can User Override?  	Use Case
-RUN	               Build	         No	              Installing dependencies (apt-get, pip install)
-CMD	               Start	       Yes (easily)	      Setting default commands or arguments
-ENTRYPOINT	       Start	     Only with --entrypoint	Defining the main application binary
-
-COPY (Simple & Safe) Purpose: The standard, safest way to copy local files into an image.
-What it does: Copies files/directories from your build context (the directory where you run docker build) to the container.
-Best Practice: Use COPY 95% of the time. It is transparent and predictable.
-Syntax: COPY <source> <destination>
-   * COPY package.json /app/ (Copies a single file)
-   * COPY . /app (Copies everything from your current directory into /app)
-
-ADD (Powerful but Risky) - Purpose: Does everything COPY does, PLUS extra automatic features.
-Extra Features:
-Auto-extract local tarballs: If you ADD myarchive.tar.gz /app/, Docker will automatically unzip/un-tar it inside the container.
-Remote URLs: You can download files from the internet directly: ADD https://example.com/file.zip /tmp/ 
-    # (Note: This is strongly discouraged because it adds an extra layer, slows down builds, and is insecure).
-When to use it: Only when you need to automatically extract a local compressed archive into the image.
-*ADD is discouraged:
- - Lack of transparency: You might forget that a .tar.gz file gets auto-extracted, leading to unexpected folder structures.
- - Invalidation of cache: Downloading from URLs breaks Docker's layer caching (because the remote file might change).
- - Security: Downloading from the internet during a build is risky. Use RUN curl ... instead so you can clean up after yourself in the same layer.
-
-GOLDEN RULE: 
-- Always prefer COPY unless you explicitly need ADD's auto-extraction feature.
-- If you need a remote file, use RUN wget ... && tar -xzf ... && rm ... in a single RUN layer instead of ADD.
------
-
-
-* docker image ls #list all image
- This image file is built from an instructional file named Dockerfile that is parsed when you run docker image build run:
- (syntax) * docker buildx build [OPTIONS] PATH | URL |
- * docker image prune #removes all Dangling images, Dangling images are images that don't have a name and are not used.
- * docker image pull hello-world # pull command downloads the images without running them
-* docker search "image" #looks for container images on Docker Hub by keyword. It helps you find image names, descriptions, star counts, 
-     and whether an image is official. N.B this will only search from Docker Hub.
-* docker search quay.io/hello #to search a different registry, people use a different registry than Docker Hub for control, cost, and reliability.
- Useful options:
---limit 5 = show only 5 results. e.g docker search ubuntu --limit 5
---filter stars=10 = show images with at least 10 stars.
---filter is-official=true = show only official images.
---no-trunc = show full descriptions.
--- format = customize how results are displayed.
-
-* docker pull quay.io/podman/hello # docker pull is used to download an image, however quay.io.. tell linux to use that website instead of the docker default.
-  #if a tag isn't specified, Docker defaulted to latest.
-* docker pull ubuntu:25.10 # Images can be tagged to save different versions of the same image. You define an image's tag by adding :<tag> after the image's name.
-* docker tag SOURCE_IMAGE[:TAG] TARGET_IMAGE[:TAG] #creates a new name/tag for an existing docker image, there are now two images, one with old name and another with new
- -* docker tag ubuntu:25.10 fav_distro:questing_quokka
-   # an image name may consist of 3 parts plus a tag. Usually like the following: registry/organisation/image:tag. But may be as short as ubuntu
-
-DOCKER COMMIT: docker commit creates a new image from the current state of a running (or stopped) container. It takes all the changes 
- that were made inside the container (files you added, packages you installed, config changes, etc.) and saves them as a new image layer.
- Basic syntax: docker commit [OPTIONS] CONTAINER [REPOSITORY[:TAG]]
-Useful options
-Option                      Meaning
--m "message"            Add a commit message (like a git commit) 
--a "Author Name"        Set the author
--c 'CMD ["..."]'        Change the default command of the new image
--p                      Pause the container while committing (default is true)
-NOTE: This is not recommended because it has limitations
-
-Container​
-Containers contain the application and what is required to execute it (dependencies); they can be started, stopped, and interacted with. 
-They are isolated environments on the host machine, capable of interacting with each other and with the host machine itself via defined methods (TCP/UDP).
-* docker container ls -a #lists all available containers, without -a flag, it just lists the running containers
-* docker ps -a #short hand 
-*  docker container rm 3d # imagine container's ID is 3d4bab29dd67, using the first few characters of an ID
-* docker container rm id1 id2 id3 #multiple argument
+  # bash — The language to run inside the container. # can be sh
 * docker run -d nginx #-d flags means run nginx in the background, without it, this will take up the entire terminal
 * docker run -d -p 8080:80 nginx #Starts Nginx in the background and makes it accessible at http://localhost:8080.
 * docker run -it -d --name iwemida ubuntu sh -c ' while true; do date; sleep 3; done'
@@ -236,12 +76,23 @@ They are isolated environments on the host machine, capable of interacting with 
     -sleep 1; – Pause the script execution for exactly 1 second.
     done – Marks the end of the loop iteration, telling it to go back to the top and repeat.
 
- * docker run -d --rm -it --name iwemida ubuntu sh -c 'while true; do date; sleep 1; done'
+* docker container ls -a | grep hello-world
+* docker container ls -a #lists all available containers, without -a flag, it just lists the running containers
+* docker ps -a #short hand 
+* docker container prune #removes all stopped container 
+* docker container rm 3d # imagine container's ID is 3d4bab29dd67, using the first few characters of an ID
+* docker container rm id1 id2 id3 #multiple argument
+* docker run -d --rm -it --name iwemida ubuntu sh -c 'while true; do date; sleep 1; done'
  # --rm - Automatically deletes the container after it stops.
 (Ctrl + P, then Ctrl + Q) - This safely detaches your terminal screen and drops you back onto your host machine's command line,
  leaving the container ticking away silently.
- 
- TO INTERACT WITH IT
+* docker rm iwemida # command deletes the container entirely. It removes the container's filesystem, its logs, its network settings, and its metadata from your Docker host.
+  # rm can't remove a working container except force delete:
+ * docker rm -f iwemida or docker rm --force iwemida
+ FOR CONTEXT: *docker kill iwemida && docker rm iwemida is equivalent to *docker rm --force iwemida 
+   # This is because when kill is run, it stops but keeps the container & can be restarted with: *docker start iwemida.
+
+  START & PAUSING CONTAINERS
  * docker pause iwemida  & * docker unpause iwemida #this pauses and unpauses the container
  * docker start iwemida #this restarts stopped container - docker start cont1 cont2 ..
  * docker attach iwemida #reconnects your terminal to the container. either it was -d detached or you using another window
@@ -261,7 +112,8 @@ WORKING WITHIN A RUNNING CONTAINER
  *docker exec iwemida curl http://localhost #curl request from localhost (container itself) - use case: if there is a web server inside, it fetches the webpage
  *docker exec iwemida ping google.com #Creates a file inside the running container.
  *docker exec iwemida python script.py #if python is installed, it runs the script without ending the container
- * docker kill iwemida # This command forcefully stops the main process inside the running container, sends SIGKILL immediately (or another signal if specified)
+
+* docker kill iwemida # This command forcefully stops the main process inside the running container, sends SIGKILL immediately (or another signal if specified)
  *docker stop iwemida #Sends SIGTERM, waits (default 10s), then SIGKILL if still running
    #SIGTERM is a request. The process gets a chance to: Save unsaved data, Close open files/connections cleanly, Notify other systems it's shutting down,
   Run any custom cleanup logic, even choose to ignore the signal and keep running (gives well-behaved apps to shut down cleanly), else SEGKILL:
@@ -269,22 +121,15 @@ WORKING WITHIN A RUNNING CONTAINER
      -The process: Gets zero warning. Cannot run any cleanup code, Cannot catch or block it — this is by design, so a truly stuck/unresponsive process can always be terminated
         # *docker stop -t 30 xxx   # give it 30 seconds before force-killing
  *docker kill iwemida #Sends SIGKILL immediately (or another signal if specified)
- * docker rm iwemida # command deletes the container entirely. It removes the container's filesystem, its logs, its network settings, and its metadata from your Docker host.
-  # rm can't remove a working container except force delete:
- * docker rm -f iwemida or docker rm --force iwemida
- FOR CONTEXT: *docker kill iwemida && docker rm iwemida is equivalent to *docker rm --force iwemida 
-   # This is because when kill is run, it stops but keeps the container & can be restarted with: *docker start iwemida.
-
-INSIDE A CONTAINER
+ 
+DOWNLOADING COMMANDS INSIDE A CONTAINER 
 * docker run -it -d --name iwemida ubuntu #ran an interactive container
 * RUN apt-get update && apt-get install -y curl #better than running the commands individually
 * apt-get update #Golden rule, it refreshes app store inventory, download the latest package list
 * apt-get -y install curl #downloads a command into the container 
 *  sh -c 'while true; do echo "Input website:"; read website; echo "Searching.."; sleep 1; curl http://$website; done'
  # infinite loop inside a shell script that repeatedly prompts you for a website name, makes an HTTP request to that site using curl,
-      prints out the response, and then starts all over again.
-
-
+  prints out the response, and then starts all over again.
 
 Most used commands:​
   command 	                                   explain     	                                shorthand
@@ -297,9 +142,4 @@ docker container rm <container name or id>	   Removes a container	              
 docker container stop <container name or id>	   Stops a container	                         docker stop
 docker container exec <container name or id>	   Executes a command inside the container 	 docker exec
 
-
-
-*
-The CLI interacts with the "Docker Engine" which is made up of 3 components:
- - the Docker daemon, the Rest API, and the CLI client(command line interface)
 
