@@ -79,15 +79,15 @@ Every line in a Dockerfile (except comments) creates a "layer" on top of the pre
 If you change the bottom layer, it has to rebuild all the layers above it (which is why we combine update and install into one line to save time!).
 
 - dockerfile contains the blueprint to create images, just like images are for containers, the only difference is that Dockerfile is written by the user and image by the machine
-TO CREATE A DOCKERFILE
-.....hello.sh #shell script
+TO CREATE A DOCKERFILE -> IMAGE -> CONTAINER
+.....hello.sh  #shell script file to be run
 #!/bin/sh # sh instead of bash because alpine linux is too small to recognise bash
 echo "Wati magbo"
 ....
 chmod +x hello.sh #make it executable
 ...
 
-............... Dockerfile #not dockerfile
+............... Dockerfile #not dockerfile-its cap sensitive
 # Start from the alpine image that is smaller but no fancy tools
 FROM alpine:3.21
 
@@ -102,9 +102,22 @@ COPY hello.sh .
 
 # When running docker run the command will be ./hello.sh
 CMD ["./hello.sh"]
-......................
+#each step is called a layer, Each layer contains only the changes (added files, deleted files, or updated packages) made since the previous layer.
+#the more the steps, the heavier and space consuming.
+#dockerfile use memory caching; instead of running every dockerfile from the scratch, if looks to similarities between that and the previous dockerfile,
+  skips layers with the same commands and files, and just rebuilds the new changes.
+...................... TO BUILD IMAGE
+* docker build -t bello . #docker build creates docker image, docker pull downloads. # -t flag is for custom name like bello # . means dockerfile in the current directory
+............ 
+docker run bello #creates the container
+.......MANUALLY CREATING A NEW LAYER ON TOP OF AN IMAGE, COPY A FILE INTO THE CONTAINER
+ * docker cp ./add.txt comp_jon:/usr/src/app #./add.txt - a txt file from the current directory #comp_jon-name of container (docker container ls -a)
+ # /usr/src/app - path of the WORKDIR
+*docker exec -it comp_jon sh #this open an interactive shell container #using docker run bello - will create a new container every time. open a container with exec 
+* docker start comp_jon #if the above command doesn't work because the container is not running.
+* docker diff comp_jon # output: C /root A /root/.ash_history etc 
+ #The character in front of the file name indicates the type of the change in the container's filesystem: A = added, D = deleted, C = changed. 
 
-* docker build -t bello . #docker build creates docker image, docker pull downloads. # -t flag is for custom name like bello # . means dockerfile in the current directory 
 ------NOTE: COMMANDS IN DOCKERFILE
 WORKDIR - BASIC SYNTAX: WORKDIR /path/to/directory
 The WORKDIR instruction is used in Dockerfiles to set the working directory for any subsequent instructions (like RUN, CMD, ENTRYPOINT, COPY, and ADD).
@@ -191,7 +204,17 @@ GOLDEN RULE:
 * docker tag SOURCE_IMAGE[:TAG] TARGET_IMAGE[:TAG] #creates a new name/tag for an existing docker image, there are now two images, one with old name and another with new
  -* docker tag ubuntu:25.10 fav_distro:questing_quokka
    # an image name may consist of 3 parts plus a tag. Usually like the following: registry/organisation/image:tag. But may be as short as ubuntu
- 
+
+DOCKER COMMIT: docker commit creates a new image from the current state of a running (or stopped) container. It takes all the changes 
+ that were made inside the container (files you added, packages you installed, config changes, etc.) and saves them as a new image layer.
+ Basic syntax: docker commit [OPTIONS] CONTAINER [REPOSITORY[:TAG]]
+Useful options
+Option                      Meaning
+-m "message"            Add a commit message (like a git commit) 
+-a "Author Name"        Set the author
+-c 'CMD ["..."]'        Change the default command of the new image
+-p                      Pause the container while committing (default is true)
+NOTE: This is not recommended because it has limitations
 
 Container​
 Containers contain the application and what is required to execute it (dependencies); they can be started, stopped, and interacted with. 
@@ -260,6 +283,7 @@ INSIDE A CONTAINER
 *  sh -c 'while true; do echo "Input website:"; read website; echo "Searching.."; sleep 1; curl http://$website; done'
  # infinite loop inside a shell script that repeatedly prompts you for a website name, makes an HTTP request to that site using curl,
       prints out the response, and then starts all over again.
+
 
 
 Most used commands:​
