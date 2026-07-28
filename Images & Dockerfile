@@ -7,7 +7,6 @@ An image and a container runtime (Docker engine) are needed to create a containe
 DOCKERFILE
 Dockerfile = Instructions for building a completely self-contained, portable computer environment.
 You define what should be included in the image with different instructions. We'll learn about the best practices here by creating one.
-
 The Golden Rule of Dockerfiles:
 Every line in a Dockerfile (except comments) creates a "layer" on top of the previous one. Docker caches these layers. 
 If you change the bottom layer, it has to rebuild all the layers above it (which is why we combine update and install into one line to save time!).
@@ -113,6 +112,65 @@ When to use it: Only when you need to automatically extract a local compressed a
 ---------------
 This image file is built from an instructional file named Dockerfile that is parsed when you run docker image build run:
  (syntax) * docker buildx build [OPTIONS] PATH | URL |
+docker build flags go into these categories:
+General build:
+-f, --file: Tells Docker to use a specific Dockerfile instead of the default Dockerfile. 
+Useful when you have multiple Dockerfiles (e.g., Dockerfile.dev, Dockerfile.prod) or keep them in subdirectories.
+* docker build -f Dockerfile.dev .	
+
+ --build-arg: Passes build-time variables into the Dockerfile (used with ARG instructions). 
+This is for non-sensitive values (e.g., version numbers). Do not use for secrets—they remain in the image history.
+* docker build --build-arg VERSION=1.2.3 .
+
+--secret:	(BuildKit only) Securely passes sensitive data (API keys, passwords) into the build without persisting them in the final image. 
+Much safer than --build-arg for secrets. * docker build --secret id=mysecret,src=./key.txt .
+
+--target: Builds up to a specific stage in a multi-stage Dockerfile. Stops at that stage instead of building the final image. 
+Great for debugging intermediate layers or building only a dev environment. * docker build --target builder .
+
+Cache & Optimization Flags:
+--no-cache:	Forces Docker to ignore the entire build cache. Every instruction runs fresh. 
+Useful when you suspect a corrupted cache or need a completely clean rebuild (but slows down builds significantly).
+* docker build --no-cache .
+
+--pull: Forces Docker to always pull the latest version of the base image (FROM) before building. 
+Without this, Docker uses whatever base image you have locally, which might be outdated.
+* docker build --pull .	
+
+--cache-from: (BuildKit) Tells Docker to use a specific image as a cache source—even if it wasn't built locally. 
+Essential for CI/CD pipelines where you want to reuse layers from a previously pushed image to speed up builds.
+* docker build --cache-from myapp:latest .
+
+--memory:	Limits the maximum memory the build can use. Prevents a single build from consuming all host RAM.
+* docker build --memory=2g .
+
+Output & Metadata Flags
+-t, --tag: Applies a name and optional tag to the built image. You can specify multiple -t flags to give the same image several names (e.g., versioned and latest).
+Without -t, the image gets only an ID (unmanageable). *	docker build -t myapp:1.0 -t myapp:latest .	
+
+--label: Adds metadata to the image in key=value format. Useful for adding version, build date, or maintainer info. Can be inspected later with docker inspect.
+*	docker build --label maintainer="john@example.com" .	
+
+--output, -o	docker: (BuildKit) Exports build artifacts (files, binaries) directly to the host filesystem without creating a Docker image. 
+Fantastic for compiling code inside a container and extracting the result. * build --output type=local,dest=./dist .	
+
+Advanced / BuildKit-Only Flags (Modern Docker)
+--ssh:	(BuildKit) Forwards your SSH agent into the build container. 
+Allows RUN commands to securely clone private Git repos during build without embedding SSH keys in the image.
+* docker build --ssh default .
+
+--platform:	Builds an image for a different architecture than your host (e.g., building ARM64 on an x86 machine).
+Requires emulation (QEMU) or a builder that supports cross-platform builds. *	docker build --platform linux/arm64 .
+
+--progress:	Controls the output verbosity. auto (default) shows a fancy UI; plain shows raw, line-by-line logs (great for debugging); 
+tty forces interactive. *docker build --progress=plain .
+
+--no-cache-filter: (BuildKit) Clears the cache only for specific stages in a multi-stage build, while preserving cache for others.
+Saves time compared to --no-cache. * docker build --no-cache-filter stage1 .	
+
+
+
+
 * docker image ls #list all image
 * docker image prune #removes all Dangling images, Dangling images are images that don't have a name and are not used.
 * docker image pull hello-world # pull command downloads the images without running them
