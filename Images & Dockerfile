@@ -145,8 +145,8 @@ Essential for CI/CD pipelines where you want to reuse layers from a previously p
 * docker build --memory=2g .
 
 Output & Metadata Flags
--t, --tag: Applies a name and optional tag to the built image. You can specify multiple -t flags to give the same image several names (e.g., versioned and latest).
-Without -t, the image gets only an ID (unmanageable). *	docker build -t myapp:1.0 -t myapp:latest .	
+-t, --tag: The -t flag stands for tag and is used to give a Docker image a human-readable name and optional version (tag) when you build it. Th
+is makes it easy to identify and run the image later, for example myapp:latest or myapp:v2. *	docker build -t myapp:1.0 -t myapp:latest .	
 
 --label: Adds metadata to the image in key=value format. Useful for adding version, build date, or maintainer info. Can be inspected later with docker inspect.
 *	docker build --label maintainer="john@example.com" .	
