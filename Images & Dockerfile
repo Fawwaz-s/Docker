@@ -49,7 +49,34 @@ docker run bello #creates the container
 *docker exec -it comp_jon sh #this open an interactive shell container #using docker run bello - will create a new container every time. open a container with exec 
 * docker start comp_jon #if the above command doesn't work because the container is not running.
 * docker diff comp_jon # output: C /root A /root/.ash_history etc 
- #The character in front of the file name indicates the type of the change in the container's filesystem: A = added, D = deleted, C = changed. 
+ #The character in front of the file name indicates the type of the change in the container's filesystem: A = added, D = deleted, C = changed.
+
+******** NEW EXERCISE
+CREATE A NEW IMAGE FROM A CONTAINER
+*  docker commit happy_mendeleev bello:v1 #bello:v1 - new image built from container happy_mendeleev
+............ Dockerfile.dev
+# Start from the alpine image
+FROM alpine:3.21
+
+# Use /usr/src/app as our workdir. The following instructions will be executed in this location.
+WORKDIR /usr/src/app
+
+# Copy the hello.sh file from this location to /usr/src/app/ creating /usr/src/app/hello.sh.
+COPY hello.sh . #same file used in the previous dockerfile
+
+# Execute a command with `/bin/sh -c` prefix.
+RUN touch add.txt #the same file copied into a container from before
+
+# When running Docker run the command will be ./hello.sh
+CMD ["./hello.sh"]
+........... create a new image
+ * docker build -f Dockerfile.dev -t macron:v2 . # this creates another image, now we have 3 images from the same source macron, macron:v1, and macron:v2
+...... 
+docker run macron:v2 ls #does the same work as docker exec containername ls, it list the content of the container
+docker run macron:v1 ls #content also matches this one.
+
+
+
 
 ------NOTE: COMMANDS IN DOCKERFILE
 WORKDIR - BASIC SYNTAX: WORKDIR /path/to/directory
