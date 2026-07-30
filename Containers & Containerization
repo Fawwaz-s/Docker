@@ -58,13 +58,51 @@ They are isolated environments on the host machine, capable of interacting with 
 syntax : docker container run <image> OR  * docker run <image>
 * docker container run hello-world #hello-world is the image name  #short-handed to docker run hello-world
  # instructs the daemon to create a container from the image and download the image if it is not available
-* docker run -it ubuntu bash
-  # -i (--interactive) — Keeps standard input (STDIN) open so you can type commands.
-  # -t (--tty) — Allocates a terminal, giving you a shell experience. #without it, you will be stuck in the terminal.
-  # ubuntu — The image to use. If it isn't already on your computer, Docker will automatically download the latest Ubuntu image from Docker Hub.
+FLAGS WITH DOCKER RUN: 
+docker run: Core Flags for Creating Containers
+These are the foundational options for running a new container. They control its lifecycle, interaction, and core settings.
+-d, --detach: Runs the container in the background. This frees up your terminal, and you can later use docker logs to see its output or docker attach to reconnect.
+ * docker run -d nginx #-d flags means run nginx in the background, without it, this will take up the entire terminal
+-it ( -i & -t combined): This is the most common combination for interactive work.
+   -i, --interactive: Keeps the standard input (STDIN) open, even if you're not attached to the container.
+   -t, --tty: Allocates a pseudo-TTY, giving you a proper terminal session. The combination -it is required to run an interactive shell like bash.
+ * docker run -it iwemida bash
+  # iwemida — The image to use. If it isn't already on your computer, Docker will automatically download the latest Ubuntu image from Docker Hub.
   # bash — The language to run inside the container. # can be sh
-* docker run -d nginx #-d flags means run nginx in the background, without it, this will take up the entire terminal
-* docker run -d -p 8080:80 nginx #Starts Nginx in the background and makes it accessible at http://localhost:8080.
+--name: Assigns a custom name to the container, which makes it easier to reference later instead of using the auto-generated ID.
+--rm: Automatically removes the container when it exits. This is perfect for short-lived, temporary containers that you don't need to keep around,
+ helping to prevent clutter.
+ * docker container prune #removes all stopped container 
+ * docker container rm 3d # imagine container's ID is 3d4bab29dd67, using the first few characters of an ID
+ * docker container rm id1 id2 id3 #multiple argument
+ * docker run -d --rm -it --name iwemida ubuntu sh -c 'while true; do date; sleep 1; done'
+   # --rm - Automatically deletes the container after it stops.
+  (Ctrl + P, then Ctrl + Q) - This safely detaches your terminal screen and drops you back onto your host machine's command line,
+  leaving the container ticking away silently.
+ * docker rm iwemida # command deletes the container entirely. It removes the container's filesystem, its logs, its network settings, and its metadata from your Docker host.
+  # rm can't remove a working container except force delete:
+ * docker rm -f iwemida or docker rm --force iwemida
+ FOR CONTEXT: *docker kill iwemida && docker rm iwemida is equivalent to *docker rm --force iwemida 
+   # This is because when kill is run, it stops but keeps the container & can be restarted with: *docker start iwemida.
+   -p, --publish: Publishes a port from the container to the host. The format is host-port:container-port, allowing external traffic to reach a service inside the container.
+  * docker run -d -p 8080:80 nginx #Starts Nginx in the background and makes it accessible at http://localhost:8080.
+
+docker run: Flags for Resource and Security Management
+These flags give you control over how much system resources a container can use and the level of permissions it has.
+-m, --memory: Sets a memory limit for the container. This is a critical flag to prevent a single container from consuming all the host's memory.
+--cpus: Specifies the number of CPUs the container can use, such as --cpus="1.5".
+--privileged: Grants extended privileges to the container, essentially giving it access to the host's devices and capabilities.
+ Use this flag with caution, as it carries significant security risks.
+--security-opt: Allows setting advanced security options, such as disabling AppArmor or Seccomp profiles.
+
+docker run: Flags for Environment and Networking
+These flags configure the container's environment and how it connects to networks.
+-e, --env: Sets an environment variable inside the container, like -e MY_VAR=my_value.
+-v, --volume: Mounts a volume or directory from the host into the container. The format is host-path:container-path. 
+ This allows data to persist and be shared between the host and the container.
+--network: Connects the container to a network. For example, --network host makes the container use the host's network stack.
+--add-host: Adds a custom entry to the container's /etc/hosts file, allowing you to define hostname-to-IP mappings.
+
 * docker run -it -d --name iwemida ubuntu sh -c ' while true; do date; sleep 3; done'
  # --name iwemida _ this overrides the feature that assigns random names and forces "iwemida"
  # ubuntu - this is the image ran to form a container, It's a lightweight, stripped-down version of the standard Ubuntu Linux OS
@@ -75,22 +113,9 @@ syntax : docker container run <image> OR  * docker run <image>
     -do date; – Print the current system date and time to the standard output.
     -sleep 1; – Pause the script execution for exactly 1 second.
     done – Marks the end of the loop iteration, telling it to go back to the top and repeat.
-
 * docker container ls -a | grep hello-world
 * docker container ls -a #lists all available containers, without -a flag, it just lists the running containers
 * docker ps -a #short hand 
-* docker container prune #removes all stopped container 
-* docker container rm 3d # imagine container's ID is 3d4bab29dd67, using the first few characters of an ID
-* docker container rm id1 id2 id3 #multiple argument
-* docker run -d --rm -it --name iwemida ubuntu sh -c 'while true; do date; sleep 1; done'
- # --rm - Automatically deletes the container after it stops.
-(Ctrl + P, then Ctrl + Q) - This safely detaches your terminal screen and drops you back onto your host machine's command line,
- leaving the container ticking away silently.
-* docker rm iwemida # command deletes the container entirely. It removes the container's filesystem, its logs, its network settings, and its metadata from your Docker host.
-  # rm can't remove a working container except force delete:
- * docker rm -f iwemida or docker rm --force iwemida
- FOR CONTEXT: *docker kill iwemida && docker rm iwemida is equivalent to *docker rm --force iwemida 
-   # This is because when kill is run, it stops but keeps the container & can be restarted with: *docker start iwemida.
 
   START & PAUSING CONTAINERS
  * docker pause iwemida  & * docker unpause iwemida #this pauses and unpauses the container
@@ -100,10 +125,20 @@ syntax : docker container run <image> OR  * docker run <image>
  * docker logs  -f iwemida #-f flag means follow (LIVE), so new log lines keep appearing in real time # the code shows the logs of the container.
 
 WORKING WITHIN A RUNNING CONTAINER
+docker exec: Flags for Running Commands in Existing Containers
+docker exec has a smaller, more focused set of options, with many shared concepts from docker run.
+-it ( -i & -t): Just like with docker run, use this to run an interactive command..
+  * docker exec -it iwemida bash #opens a bash terminal in the container
+  * docker exec -it iwemida sh #sh is minimal form of bash 
+-d, --detach: Runs the command in the background of the container. This is useful for starting long-running processes in an already running container.
+-e, --env: Sets an environment variable that is only used for the command being executed, without affecting the rest of the container.
+-u, --user: Runs the command with a specific username or UID instead of the container's default user.
+ * docker exec -u root clever_bhabha bash -c "apt-get update && apt-get -y install curl"
+-w, --workdir: Specifies a working directory for the command to be executed in.
+--privileged: Grants the command extended privileges, similar to the docker run flag, but only for that specific process.
  * docker exec iwemida ls -la  #exec means: Run a new command inside an already running container.
    #ls -la : - l flag -> long format (instead of just names, it prints type, size, permission, etc.), -a flag -> all
- * docker exec -it iwemida bash #opens a bash terminal in the container
- *docker exec -it iwemida sh #sh is more universal 
+
  *docker exec iwemida ls -la /usr/share/nginx/html #list all files in a path (to check if a file is missing)
  *docker exec iwemida cat /var/log/read.log #cat a file in a path (read a log file or check configuration files)
  *docker exec iwemida ps auxf #checks running processes in a container #can be run -it iwemida bash new terminal _ ps auxf
