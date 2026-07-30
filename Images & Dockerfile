@@ -87,6 +87,7 @@ When Docker encounters a WORKDIR instruction, it does three things:
     - Persists as the default directory when you run the container interactively (e.g., docker run -it my-image will drop you into this directory).
 # When you use cd instead of WORKDIR, that cd command runs in a temporary shell session. As soon as that shell session ends
  (which happens right after the RUN command finishes), the directory resets back to where it was.
+NB: /usr/src/app (descriptive) or /app (modern and simple)
 
 RUN :  used to Execute commands to build your image layers (e.g., installing packages, compiling code, changing permissions).
 it is used at build-time (when you run docker build .) # can't be overridden, its baked in.
