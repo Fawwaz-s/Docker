@@ -57,5 +57,9 @@ CMD ["./bday.sh"]
 .......
 * docker build -t way -f Dockerfile.co . #creates the image
 * docker run -d --name spain way #opens a container in the background
-
+* docker exec -u root spain bash -c "apt update && apt install -y curl"
+ #used bash -c " " #to give the installation command in the container
+* docker exec -it spain curl "google.com" #curl command works in the container
+OR 
+* docker exec -u root -it spain bash -c "apt update && apt install -y curl" #installs curl and open an interactive shell.
 
