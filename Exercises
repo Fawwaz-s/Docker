@@ -1,0 +1,61 @@
+Exercise 1: Create a Dockerfile for a new image that starts from ubuntu:24.04 and add instructions to install curl into that image.
+Then add instructions to copy the script file into that image and finally set it to run on container start using CMD.
+........Create a shell sript named bday.sh
+#!/bin/bash
+while true
+do
+  echo "Input website:"
+  read website; echo "Searching.."
+  sleep 1; curl http://$website
+done
+........Create a docker file named Dockerfile.curl
+FROM ubuntu:24.04
+
+WORKDIR /app
+
+COPY bday.sh .
+
+RUN chmod +x bday.sh
+
+RUN apt-get update
+
+RUN apt install -y curl 
+
+#RUN apt-get update && apt install -y curl # this can be written multiple line or one line
+
+CMD ["./bday.sh"]
+..........
+* docker build -f Dockerfile.curl -t moss . #creates the image
+* docker run -it --name foster moss # creates an interactive container
+.......
+
+Exercise 1.1: Create a container that does the same thing but the curl command is downloaded in the container and not in the Dockerfile.
+........Create a shell sript named bday.sh
+#!/bin/bash
+while true
+do
+  echo "Input website:"
+  read website; echo "Searching.."
+  sleep 1; curl http://$website
+done
+........Create a docker file named Dockerfile.curl
+FROM ubuntu:24.04
+
+WORKDIR /app
+
+COPY bday.sh .
+
+RUN chmod +x bday.sh
+
+RUN apt-get update
+
+RUN apt install -y curl 
+
+#RUN apt-get update && apt install -y curl # this can be written multiple line or one line
+
+CMD ["./bday.sh"]
+.......
+* docker build -t way -f Dockerfile.co . #creates the image
+* docker run -d --name spain way #opens a container in the background
+
+
