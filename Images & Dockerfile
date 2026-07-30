@@ -121,6 +121,19 @@ Useful when you have multiple Dockerfiles (e.g., Dockerfile.dev, Dockerfile.prod
  --build-arg: Passes build-time variables into the Dockerfile (used with ARG instructions). 
 This is for non-sensitive values (e.g., version numbers). Do not use for secrets—they remain in the image history.
 * docker build --build-arg VERSION=1.2.3 .
+NB.  --build-arg for passwords or API keys. They are stored in the image history (docker history --no-trunc). 
+Use --secret (BuildKit) or secret mounts instead.
+#BuildKit is the modern, high-performance backend engine for docker build that has replaced the older legacy builder
+ Docker Build uses a client-server model: 
+   - Client (Buildx): The command-line interface you interact with when you run docker build. 
+   It interprets your command and sends a build request to the backend .
+   - Server (BuildKit): The actual "builder" daemon that receives the request, executes the build steps, and produces the final image . 
+    You can even have multiple BuildKit backends (called "builders") managed by a single client.
+   - You get: better cache invalidation, Parallel layer building, --secret and --ssh support, Skipping unused stages.
+ # BuildKit is enabled by default in modern Docker installations . However, if you need to explicitly enable or disable it
+    (e.g., to use the legacy builder for Windows containers), you can use the DOCKER_BUILDKIT environment variable :
+    * export DOCKER_BUILDKIT=1 docker build -t myapp . # Enable BuildKit
+    * export DOCKER_BUILDKIT=0 docker build -t myapp . # Disable BuildKit (use legacy builder)
 
 --secret:	(BuildKit only) Securely passes sensitive data (API keys, passwords) into the build without persisting them in the final image. 
 Much safer than --build-arg for secrets. * docker build --secret id=mysecret,src=./key.txt .
