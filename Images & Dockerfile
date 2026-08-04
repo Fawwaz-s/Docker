@@ -75,10 +75,41 @@ CMD ["./hello.sh"]
 docker run macron:v2 ls #does the same work as docker exec containername ls, it list the content of the container
 docker run macron:v1 ls #content also matches this one.
 
-
-
-
 ------NOTE: COMMANDS IN DOCKERFILE
+FROM - The FROM instruction initializes a new build stage and sets the base image for subsequent instructions. 
+Every valid Dockerfile must start with a FROM command (with one exception - ARG can come before FROM). *ARG VERSION=22.04 n/ FROM ubuntu:${VERSION}
+Basic Syntax: FROM [--platform=<platform>] <image>[:<tag>] [AS <name>]
+* FROM ubuntu # Simplest form - uses latest tag
+* FROM python:3.9-slim # With specific tag
+* FROM node:18-alpine AS builder # With alias for multi-stage builds
+* FROM --platform=linux/amd64 golang:1.20 # Specify platform explicitly
+Key Concepts
+- Base Image: The foundation layer your image is built upon. It provides:
+   -The operating system (or minimal OS)
+   -Pre-installed tools and packages
+   -Runtime environment (Node.js, Python, Java, etc.)
+- Tags: Always use specific tags instead of latest for reproducibility:
+* FROM ubuntu:latest #Avoid - unpredictable
+* FROM ubuntu:22.04 # Good - version pinned
+- Multi-Stage Builds: You can have multiple FROM instructions to create intermediate images:
+# Build stage----FROM golang:1.20 AS builder 
+WORKDIR /app
+COPY . .
+RUN go build -o myapp-----
+
+# Runtime stage - smaller image----
+FROM alpine:3.18
+COPY --from=builder /app/myapp /usr/local/bin/
+CMD ["myapp"]-----
+Important Notes
+..Only one FROM is allowed in a single-stage Dockerfile
+..Official images on Docker Hub are maintained by Docker (e.g., ubuntu, python, node)
+..The AS keyword creates a named stage that can be referenced later
+..FROM scratch creates an empty image - useful for static binaries
+..Choose minimal base images to reduce size and attack surface:
+   * FROM python:3.9-slim # Better - slim variant
+   * FROM python:3.9-alpine # Best - alpine for minimal size
+
 WORKDIR - BASIC SYNTAX: WORKDIR /path/to/directory
 The WORKDIR instruction is used in Dockerfiles to set the working directory for any subsequent instructions (like RUN, CMD, ENTRYPOINT, COPY, and ADD).
 When Docker encounters a WORKDIR instruction, it does three things:
@@ -88,6 +119,24 @@ When Docker encounters a WORKDIR instruction, it does three things:
 # When you use cd instead of WORKDIR, that cd command runs in a temporary shell session. As soon as that shell session ends
  (which happens right after the RUN command finishes), the directory resets back to where it was.
 NB: /usr/src/app (descriptive) or /app (modern and simple)
+
+COPY (Simple & Safe) Purpose: The standard, safest way to copy local files into an image.
+What it does: Copies files/directories from your build context (the directory where you run docker build) to the container.
+Best Practice: Use COPY 95% of the time. It is transparent and predictable.
+Syntax: COPY <source> <destination>
+   * COPY package.json /app/ (Copies a single file)
+   * COPY . /app (Copies everything from your current directory into /app)
+
+ADD (Powerful but Risky) - Purpose: Does everything COPY does, PLUS extra automatic features.
+Extra Features:
+Auto-extract local tarballs: If you ADD myarchive.tar.gz /app/, Docker will automatically unzip/un-tar it inside the container.
+Remote URLs: You can download files from the internet directly: ADD https://example.com/file.zip /tmp/ 
+    # (Note: This is strongly discouraged because it adds an extra layer, slows down builds, and is insecure).
+When to use it: Only when you need to automatically extract a local compressed archive into the image.
+*ADD is discouraged:
+ - Lack of transparency: You might forget that a .tar.gz file gets auto-extracted, leading to unexpected folder structures.
+ - Invalidation of cache: Downloading from URLs breaks Docker's layer caching (because the remote file might change).
+ - Security: Downloading from the internet during a build is risky. Use RUN curl ... instead so you can clean up after yourself in the same layer.
 
 RUN :  used to Execute commands to build your image layers (e.g., installing packages, compiling code, changing permissions).
 it is used at build-time (when you run docker build .) # can't be overridden, its baked in.
@@ -113,6 +162,8 @@ Syntax:
  ENTRYPOINT + CMD combination :
 ENTRYPOINT ["curl"]      # The program is ALWAYS curl #defines the static program (the binary).
 CMD ["--help"]           # If user types nothing, run "curl --help" #defines the dynamic default arguments passed to that program.
+# ENTRYPOINT - What program should run?
+# CMD - What should the default arguments be?
 
 RUN vs CMD vs ENTRYPOINT
 Instruction     	Time	     Can User Override?  	Use Case
@@ -120,23 +171,6 @@ RUN	               Build	         No	              Installing dependencies (apt-
 CMD	               Start	       Yes (easily)	      Setting default commands or arguments
 ENTRYPOINT	       Start	     Only with --entrypoint	Defining the main application binary
 
-COPY (Simple & Safe) Purpose: The standard, safest way to copy local files into an image.
-What it does: Copies files/directories from your build context (the directory where you run docker build) to the container.
-Best Practice: Use COPY 95% of the time. It is transparent and predictable.
-Syntax: COPY <source> <destination>
-   * COPY package.json /app/ (Copies a single file)
-   * COPY . /app (Copies everything from your current directory into /app)
-
-ADD (Powerful but Risky) - Purpose: Does everything COPY does, PLUS extra automatic features.
-Extra Features:
-Auto-extract local tarballs: If you ADD myarchive.tar.gz /app/, Docker will automatically unzip/un-tar it inside the container.
-Remote URLs: You can download files from the internet directly: ADD https://example.com/file.zip /tmp/ 
-    # (Note: This is strongly discouraged because it adds an extra layer, slows down builds, and is insecure).
-When to use it: Only when you need to automatically extract a local compressed archive into the image.
-*ADD is discouraged:
- - Lack of transparency: You might forget that a .tar.gz file gets auto-extracted, leading to unexpected folder structures.
- - Invalidation of cache: Downloading from URLs breaks Docker's layer caching (because the remote file might change).
- - Security: Downloading from the internet during a build is risky. Use RUN curl ... instead so you can clean up after yourself in the same layer.
 ---------------
 This image file is built from an instructional file named Dockerfile that is parsed when you run docker image build run:
  (syntax) * docker buildx build [OPTIONS] PATH | URL |
