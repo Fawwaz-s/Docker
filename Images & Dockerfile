@@ -156,9 +156,34 @@ ENTRYPOINT (Runtime - Immutable)
 Purpose: Configures the container to run as an executable. It defines the main program that should always run.
 When it runs: At container startup.
 Can you override it at runtime? Yes, but you must use a flag: docker run --entrypoint bash my-image.
-Syntax:
-  - Exec form (PREFERRED): ENTRYPOINT ["python", "app.py"]
-  - Shell form: ENTRYPOINT python app.py (rarely used).
+Syntax: NB. RUN,CMD & ENTRY POINT follow this rule.
+  - Exec form (PREFERRED): ENTRYPOINT ["python", "app.py"] #In the exec form the command and its arguments are provided as a list (with brackets)
+  - Shell form: ENTRYPOINT python app.py (rarely used). #In the shell form, the command is provided as a string without brackets. 
+ENTRYPOINT /bin/ping -c 3  
+CMD localhost  OUTPUT: /bin/sh -c '/bin/ping -c 3' /bin/sh -c localhost 
+# Because ENTRYPOINT is shell form, Docker ignores CMD as arguments — 
+  instead, CMD (also shell form) runs as its own separate /bin/sh -c command   **WON'T WORK
+#That means it behaves like typing the command into a terminal — you get shell features like variable substitution ($HOME), pipes (|), 
+  and chaining (&&), but the actual process running as PID 1 is /bin/sh, not your program.
+ENTRYPOINT ["/bin/ping","-c","3"]
+CMD localhost	  OUTPUT:/bin/ping -c 3 /bin/sh -c localhost 
+# CMD is shell form, so it does not merge into ENTRYPOINT's argument list — it runs as its own thing: /bin/sh -c localhost **BAD
+ENTRYPOINT /bin/ping -c 3
+CMD ["localhost"]    OUTPUT/bin/sh -c '/bin/ping -c 3' localhost
+# CMD exec form → Docker treats it as a plain argument list, but since ENTRYPOINT is shell form (not exec form), 
+ it still doesn't append into the ping command — it just sits there disconnected as localhost
+ENTRYPOINT ["/bin/ping","-c","3"]
+CMD ["localhost"]	OUTPUT: /bin/ping -c 3 localhost
+#When ENTRYPOINT is exec form, Docker treats CMD's array as additional default arguments appended to ENTRYPOINT
+# EXEC MODE runs the program directly, no shell involved. Each array element is passed as a literal argument. 
+No variable expansion, no pipes — but the program itself becomes PID 1, which matters for things like signal handling 
+(e.g., docker stop sending SIGTERM reaches your actual program, not a shell wrapping it).
+NOTE: whether CMD's arguments get appended to ENTRYPOINT or replace it entirely depends on whether ENTRYPOINT is in exec form. 
+If ENTRYPOINT is shell form, CMD is basically ignored/separate — it doesn't combine with it.
+if you want ENTRYPOINT + CMD to work together (fixed command + overridable default argument), always use exec form (JSON array) for both. 
+Shell form is really only appropriate when you don't plan to use CMD for combining arguments 
+e.g., a standalone script that needs shell features like environment variable expansion.
+
  ENTRYPOINT + CMD combination :
 ENTRYPOINT ["curl"]      # The program is ALWAYS curl #defines the static program (the binary).
 CMD ["--help"]           # If user types nothing, run "curl --help" #defines the dynamic default arguments passed to that program.
