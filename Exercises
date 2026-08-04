@@ -62,4 +62,54 @@ CMD ["./bday.sh"]
 * docker exec -it spain curl "google.com" #curl command works in the container
 OR 
 * docker exec -u root -it spain bash -c "apt update && apt install -y curl" #installs curl and open an interactive shell.
+..........
+
+Exercise 2: Use yt-dlp in a container to download youtube videos
+......Dockerfile
+FROM ubuntu:24.04
+
+WORKDIR /mydir
+
+RUN apt-get update && apt-get install -y curl python3 ffmpeg && rm -rf /var/lib/apt/lists/*
+# downloads 3 commands at once curl, python3, ffmpeg 
+# also running apt-get update && install instead of running separate RUN update and install is standard
+#  rm -rf /var/lib/apt/lists/*  - removes the downloaded package index files afterward, since they're not needed once installation is done.
+
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+#  curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp - download link
+#  -o /usr/local/bin/yt-dlp - download destination
+
+RUN chmod a+rx /usr/local/bin/yt-dlp #give permissions
+
+ENTRYPOINT ["/usr/local/bin/yt-dlp"] #to be run with : docker run -t image "www.youtube.com"
+#ENTRYPOINT is far better suited than CMD for this Dockerfile because yt-dlp is a command-line tool designed to take arguments (YouTube URLs, output formats, download flags).
+# to use CMD: ENTRYPOINT ["/usr/local/bin/yt-dlp"] CMD ["https://www.youtube.com/watch?v=Aa55RKWZxxI"] #define a default argument
+
+CMD ["--help"] # Optional default argument if the user provides no URL
+.............
+* docker build -t wicked -f Dockerfile.yt .
+Best way to access and download file
+Syntax: docker run -v /host/path:/container/path image_name [command]
+* docker run --rm -v "$(pwd)/downloads:/downloads" wasted -o "/downloads/%(title)s.%(ext)s" https://www.youtube.com/watch?v=2D2Z-eqK0YM
+# -v "$(pwd)/downloads:/downloads"- Mount your local downloads folder to /downloads inside the container
+# wicked - The image name # --rm - To clean up the container after it finishes:
+# -o "/downloads/%(title)s.%(ext)s"	 - The -o option passed to yt-dlp (where to save)
+# https://www.youtube.com/watch?v=2D2Z-eqK0YM	- The video URL to download
+
+--TO ACCESS UNMOUNTED DOWNLOADS
+* docker run wicked https://www.youtube.com/watch?v=uTZSILGTskA #download the video from the link
+* docker export 34ab26360472 | tar -tv | grep -iE "\.(mp4|mkv|webm|m4a|part)$" #find the download file and paths
+ #docker export 34ab26360472 -Exports the filesystem of the container with ID 34ab26360472 as a tar archive.
+  #It streams the entire container filesystem to standard output (stdout). 
+  #Note: This only exports the container’s filesystem (not volumes, and not the image layers).
+ #tar -tv: Reads the tar archive coming from docker export. -t = list the contents (don’t extract) -v = verbose 
+ #| grep -iE "\.(mp4|mkv|webm|m4a|part)$" - Filters the list of files. -i = case-insensitive
+ #-E = extended regular expression #The pattern "\.(mp4|mkv|webm|m4a|part)$" regex  for file's extension to search for.
+* docker cp 34ab26360472:"/docking/wanted.webm" "./wanted.webm" # takes the video from download path to the current directory
+* sudo apt-get update && sudo apt-get install -y wslu #to install the wsl viewer the video player
+* wslview wanted.webm #plays the video
+
+*
+
+
 
