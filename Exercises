@@ -83,11 +83,14 @@ RUN chmod a+rx /usr/local/bin/yt-dlp #give permissions
 
 ENTRYPOINT ["/usr/local/bin/yt-dlp"] #to be run with : docker run -t image "www.youtube.com"
 #ENTRYPOINT is far better suited than CMD for this Dockerfile because yt-dlp is a command-line tool designed to take arguments (YouTube URLs, output formats, download flags).
-# to use CMD: ENTRYPOINT ["/usr/local/bin/yt-dlp"] CMD ["https://www.youtube.com/watch?v=Aa55RKWZxxI"] #define a default argument
+#when there is no default command, CMD [--help] which will return a prompt to input a link or keyword that works with ENTRYPOINT
 
-CMD ["--help"] # Optional default argument if the user provides no URL
+CMD ["https://www.youtube.com/watch?v=ddyBbmhvDzM"] #Both ENTRYPOINT & CMD can be used together in this context,
+if a link isn't specified at docker run, it will run CMD's default. docker run with link specified runs ENTRYPOINT.
+
 .............
 * docker build -t wicked -f Dockerfile.yt .
+* docker run wicked # runs the CMD Default
 Best way to access and download file
 Syntax: docker run -v /host/path:/container/path image_name [command]
 * docker run --rm -v "$(pwd)/downloads:/downloads" wasted -o "/downloads/%(title)s.%(ext)s" https://www.youtube.com/watch?v=2D2Z-eqK0YM
