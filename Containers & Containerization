@@ -166,6 +166,22 @@ DOWNLOADING COMMANDS INSIDE A CONTAINER
  # infinite loop inside a shell script that repeatedly prompts you for a website name, makes an HTTP request to that site using curl,
   prints out the response, and then starts all over again.
 
+TO DOWNLOAD FILES FROM DOCKER CONTAINERS
+--Inside Container
+* docker diff iwemida # it outputs files inside 
+Syntax: docker cp CONTAINER:SRC_PATH DEST_PATH # this download the file to whereever
+*  docker cp "69d3096a1e02:/docking/Every Stadium ｜ Premier League [ddyBbmhvDzM].webm" "./newname" #copy and paste as is but starts with Container id or name
+--MOUNTING METHOD
+Syntax: docker run --rm -v /host/path:/container/path image_name [command]
+* docker run --rm -v "$(pwd)/downloads:/downloads" wasted -o "/downloads/%(title)s.%(ext)s" https://www.youtube.com/watch?v=2D2Z-eqK0YM
+# -v "$(pwd)/downloads:/downloads"- Mount your local downloads folder to /downloads inside the container
+# wicked - The image name # --rm - To clean up the container after it finishes:
+# -o "/downloads/%(title)s.%(ext)s"	 - The -o option passed to yt-dlp (where to save)
+# https://www.youtube.com/watch?v=2D2Z-eqK0YM	- The video URL to download
+
+
+
+
 Most used commands:​
   command 	                                   explain     	                                shorthand
 docker image ls	                                 Lists all images	                         docker images
