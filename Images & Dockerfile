@@ -158,7 +158,7 @@ When it runs: At container startup.
 Can you override it at runtime? Yes, but you must use a flag: docker run --entrypoint bash my-image.
 Syntax: NB. RUN,CMD & ENTRY POINT follow this rule.
   - Exec form (PREFERRED): ENTRYPOINT ["python", "app.py"] #In the exec form the command and its arguments are provided as a list (with brackets)
-  - Shell form: ENTRYPOINT python app.py (rarely used). #In the shell form, the command is provided as a string without brackets. 
+  - Shell form: ENTRYPOINT python app.py (rarely used). # The command that is executed is wrapped with /bin/sh -c, which can result in unexpected behaviour 
 ENTRYPOINT /bin/ping -c 3  
 CMD localhost  OUTPUT: /bin/sh -c '/bin/ping -c 3' /bin/sh -c localhost 
 # Because ENTRYPOINT is shell form, Docker ignores CMD as arguments — 
