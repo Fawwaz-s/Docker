@@ -7,7 +7,8 @@ do
   echo "Input website:"
   read website; echo "Searching.."
   sleep 1; curl http://$website
-done
+done #this is a loop
+#echo "Searching.."; sleep 1; curl http://$1 
 ........Create a docker file named Dockerfile.curl
 FROM ubuntu:24.04
 
@@ -17,16 +18,14 @@ COPY bday.sh .
 
 RUN chmod +x bday.sh
 
-RUN apt-get update
+RUN apt-get update && apt install -y curl #Standard
 
-RUN apt install -y curl 
-
-#RUN apt-get update && apt install -y curl # this can be written multiple line or one line
-
+# ENTRYPOINT ["./bday.sh"] ---#putting the command on Entrypoint means it can run dynamically from docker run
 CMD ["./bday.sh"]
 ..........
 * docker build -f Dockerfile.curl -t moss . #creates the image
 * docker run -it --name foster moss # creates an interactive container
+* docker moss google.com #this is for if the ENTRYPOINT was set, the $1 in the script.sh makes it interactive. $1 = google.com 
 .......
 
 Exercise 1.1: Create a container that does the same thing but the curl command is downloaded in the container and not in the Dockerfile.
