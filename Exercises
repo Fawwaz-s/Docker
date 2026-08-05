@@ -92,6 +92,7 @@ if a link isn't specified at docker run, it will run CMD's default. docker run w
 * docker run wicked # runs the CMD Default
 Best way to access and download file
 Syntax: docker run -v /host/path:/container/path image_name [command]
+* docker run -v --rm "$(pwd):/docking" brymo https://www.youtube.com/watch?v=9D1_TnXvtWY #simpler, drops directly in directory /docking 
 * docker run --rm -v "$(pwd)/downloads:/downloads" wasted -o "/downloads/%(title)s.%(ext)s" https://www.youtube.com/watch?v=2D2Z-eqK0YM
 # -v "$(pwd)/downloads:/downloads"- Mount your local downloads folder to /downloads inside the container
 # wicked - The image name # --rm - To clean up the container after it finishes:
