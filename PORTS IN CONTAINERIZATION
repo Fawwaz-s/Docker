@@ -1,0 +1,42 @@
+Sending messages:
+Programs can send messages to URL(opens in a new tab) addresses such as this: http://127.0.0.1:3000 where HTTP is the protocol(opens in a new tab), 
+127.0.0.1 is an IP address, and 3000 is a port(opens in a new tab).
+Note the IP part could also be a hostname(opens in a new tab): 127.0.0.1 is also called localhost, so http://localhost:3000 works.
+
+Receiving messages:
+Programs can be assigned to listen to any available port. If a program is listening for traffic on port 3000, and a message is sent to that port,
+the program will receive and possibly process it.
+
+A message can be sent from the container to localhost; the target is the same container. Similarly, if a request is being sent from outside of a container to localhost,
+the target is your machine.
+Mapping a port ( port forwarding or port publishing) means connecting a specific port on your host machine to a specific port on a service or container running inside it.
+A message can be sent to the container if its listening to that port.
+By default, Docker containers run in an isolated network. If a web server runs inside a container listening on port 80,
+the computer's browser can't reach it until its mapped to a host port.
+* docker run -p 8080:80 nginx # Any network traffic arriving at the computer's port 8080 (Host) is forwarded to port 80 inside the container.
+Key Takeaways
+-- Isolation Control: Applications running in containers or virtual networks stay hidden and protected until you explicitly open/map a port.
+-- Ports Don't Have to Match: Host port 8080 can map to container port 80, host port 2222 can map to SSH port 22, etc.
+-- Collision Prevention: two services can't be bound to the exact same host port.
+ Port mapping lets you run five different web apps (all using internal port 80) by mapping them to distinct host ports (8001, 8002, 8003, etc.).
+
+Opening a connection from the outside world to a Docker container happens in two steps:
+- Exposing port: informing Docker that the container listens to a certain port. This doesn't do much, except it helps humans with the configuration.
+Basic syntax: EXPOSE <port> is added in the Dockerfile
+- Publishing port: Docker will map host ports to the container ports.
+Basic Syntax: docker run -p <host-port>:<container-port> # docker run -p 8080:80 nginx
+if the host port is not specified and only the container port is specified, Docker will automatically choose a free port as the host port.
+-p           4567	Random free host port → container's 4567
+-p           8080:4567	Fixed host port 8080 → container's 4567
+-P (capital, no port given)	  Publishes all EXPOSEd ports in the image, each to a random free host port
+
+We could also limit connections to a certain protocol only, e.g. UDP by adding the protocol at the end: EXPOSE <port>/udp and -p <host-port>:<container-port>/udp.
+
+NOTE!!! Security reminder: 
+- Opening a port to an application, anyone from the internet could come in and access what is been run.
+- Don't haphazardly open just any ports - a way for an attacker to get in is by exploiting any port opened to an insecure server. 
+- An easy way to avoid this is by defining the host-side port like this: -p 127.0.0.1:3456:3000.
+  # This will only allow requests from your computer through port 3456 to the application port 3000, with no outside access allowed.
+  # !!!! The short syntax, -p 3456:3000, will result in the same as -p 0.0.0.0:3456:3000, which truly is opening the port to everyone.!!!!
+
+
