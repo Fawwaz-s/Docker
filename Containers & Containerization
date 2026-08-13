@@ -179,7 +179,16 @@ Syntax: docker run --rm -v /host/path:/container/path image_name [command]
 # -o "/downloads/%(title)s.%(ext)s"	 - The -o option passed to yt-dlp (where to save)
 # https://www.youtube.com/watch?v=2D2Z-eqK0YM	- The video URL to download
 
+--VOLUME
+A Docker volume is a way to store data outside the container's own filesystem. When a program running inside the container modifies a file within this volume,
+the changes are preserved even after the container is shut down and removed, as the file resides on the host machine.
+Uses: - You can remove and recreate containers without losing important files. Keep data safe, Databases, Uploaded files, Configuration
+      - Share data between containers
+      - Two containers can use the same volume.
+      - Data survives container deletion
 
+basic syntax : docker run -v "$(pwd)/downloads/logan.log:/app/data" wasted 
+#pwd/downloads/logan.log - creates a new file in host machine #/app/data - location in or of the container
 
 
 Most used commands:​
