@@ -11,6 +11,17 @@ The Golden Rule of Dockerfiles:
 Every line in a Dockerfile (except comments) creates a "layer" on top of the previous one. Docker caches these layers. 
 If you change the bottom layer, it has to rebuild all the layers above it (which is why we combine update and install into one line to save time!).
 
+DOCKER PREBUILT IMAGE: Image that has already been built, you run in seconds eg. docker pull python:3.12 #all the Python source code is compile, installed all 50 dependencies, and reay to go.
+Types of Prebuilt Images
+- Official Base Images (e.g., ubuntu, node, python, alpine). These are maintained by the software creators or Docker. They contain just the operating system and the programming language.
+- Application Images (e.g., nginx, mysql, redis). These are fully configured databases or web servers that you can run immediately without any setup.
+- CI/CD Pipeline Images (e.g., maven:build, golang:ci). These are pre-loaded with compilers and testing tools specifically designed for automated build servers.
+NB!!!
+Because a prebuilt image is made by someone else, you are trusting that stranger's security practices.
+The Risk: A bad actor could upload a prebuilt image with malware hidden inside.
+The Fix: Never use latest tags blindly. Always use official repositories (e.g., docker.io/library/nginx) and pull images by their SHA256 digest (e.g., nginx@sha256:abc123...) 
+ to guarantee exactly what you are running. Scan the image with security tools (like Trivy or Snyk) before using it in production.
+
 - dockerfile contains the blueprint to create images, just like images are for containers, the only difference is that Dockerfile is written by the user and image by the machine
 TO CREATE A DOCKERFILE -> IMAGE -> CONTAINER
 .....hello.sh  #shell script file to be run
