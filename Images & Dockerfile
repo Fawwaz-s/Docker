@@ -21,6 +21,33 @@ Because a prebuilt image is made by someone else, you are trusting that stranger
 The Risk: A bad actor could upload a prebuilt image with malware hidden inside.
 The Fix: Never use latest tags blindly. Always use official repositories (e.g., docker.io/library/nginx) and pull images by their SHA256 digest (e.g., nginx@sha256:abc123...) 
  to guarantee exactly what you are running. Scan the image with security tools (like Trivy or Snyk) before using it in production.
+DOCKER PUSH AND PULL
+docker pull : it downloads a Docker image from a container registry to your local machine. It's how you get images that others have built or that you previously pushed.
+Syntax: docker pull [OPTIONS] NAME[:TAG|@DIGEST]
+flags
+* docker pull --all-tags nginx # Pull all tags (rare, can be large)
+* docker pull --no-cache nginx # Pull without using cache
+* docker pull -q nginx # Pull quietly (less output)
+* docker pull --platform linux/arm64 nginx # Pull for a specific platform (multi-arch images)
+more examples
+* docker pull ubuntu # Get the latest Ubuntu
+* docker pull python:3.12-slim # Get a specific Python version
+aws ecr get-login-password | docker login --username AWS --password-stdin 123.dkr.ecr.us-east-1.amazonaws.com
+docker pull 123.dkr.ecr.us-east-1.amazonaws.com/myapp:prod # Get a private image from AWS ECR
+
+--docker push: is a command that uploads a Docker image from your local machine to a container registry (like Docker Hub, Amazon ECR, Google Container Registry, etc.). 
+It's how you share your images with others or make them available for deployment.
+Syntax: docker push [OPTIONS] NAME[:TAG] #eg. docker push username/myapp:v1
+Prerequisites for docker pull
+Before pushing, you need:
+  - A Docker image built locally # docker build -t myapp:v1 . # Build your image
+  - An account on a container registry 
+  - Authentication to that registry #docker login
+  - The image properly tagged with the registry's naming convention #docker tag myapp:v1 username/myapp:v1 # Tag it for a registry (required!)
+  #naming convention of an image name must follow this pattern: [registry-host/][username/]repository[:tag]
+common examples:
+* docker push --all-tags username/myapp  # Push all tags of an image
+* docker push gcr.io/my-project/myapp:v1 # Push to specific registry
 
 - dockerfile contains the blueprint to create images, just like images are for containers, the only difference is that Dockerfile is written by the user and image by the machine
 TO CREATE A DOCKERFILE -> IMAGE -> CONTAINER
