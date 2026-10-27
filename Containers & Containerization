@@ -38,11 +38,25 @@ List running containers  	docker ps	            podman ps
 List all containers	        docker ps -a	            podman ps -a
 Stop a container                docker stop mycontainer	    podman stop mycontainer
 Start a stopped container	docker start mycontainer    podman start mycontainer
+kill a running container   docker kill mycontainer
 Remove a container	        docker rm mycontainer	    podman rm mycontainer
 List images	                docker images	            podman images
 Remove an image	               docker rmi nginx   	    podman rmi nginx
-Show logs	               docker logs mycontainer	    podman logs mycontainer
+Show logs	               docker logs mycontainer	    podman logs mycontainer    #-f flag can be used to follows logs live
 Shell into a container	      docker exec -it --name cer bash	 podman exec -it --name cer bash
+Connects to a running container           docker attach mycontainer  ## docker attach mycontainer --no-stdin #connects you but disconnect your keyboard so you can only see.
+                                          #Ctrl + P, then Ctrl + Q to detach from an attached container without stopping it, when Docker's default detach keys are in effect.
+
+Other ways of removing unused images and containers:
+docker system prune # removes all stopped containers and all dangling images, after which you still need to remove the existing image with docker rmi.
+docker system prune -a #removes all stopped containers and all images without at least one container associated to them.
+To stop, and remove all images one can use a sequence of commands
+docker stop $(docker ps -aq)
+docker rm $(docker ps -aq)
+docker rmi $(docker images -q)
+where -a means all, -q means quiet, so the list created by docker ps contains just the ids containers and docker images the list of image ids to be removed.
+The advantage of using prune is that it also deletes networks not used by the containers and build cache.
+Yet, the chosen command depends heavily on whether all or just some stuff needs to be deleted.
 
 NB.  Unlike Docker, which defaults to pulling from Docker Hub (docker.io) whenever you type a short name like nginx,
 Podman does not default to any image registry out of the box for security reasons.
