@@ -228,6 +228,11 @@ CMD ["--help"]           # If user types nothing, run "curl --help" #defines the
 # ENTRYPOINT - What program should run?
 # CMD - What should the default arguments be?
 
+e.g
+ENTRYPOINT ["/usr/local/bin/yt-dlp"] #defines the main executable that always runs when the container starts.
+CMD ["https://www.youtube.com/watch?v=Aa55RKWZxxI"] # provides default arguments that get passed to the ENTRYPOINT.
+#You can easily override the CMD by passing a new URL at runtime, while the ENTRYPOINT stays fixed.
+
 RUN vs CMD vs ENTRYPOINT
 Instruction     	Time	     Can User Override?  	Use Case
 RUN	               Build	         No	              Installing dependencies (apt-get, pip install)
