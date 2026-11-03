@@ -204,6 +204,9 @@ Uses: - You can remove and recreate containers without losing important files. K
 basic syntax : docker run -v "$(pwd)/downloads/logan.log:/app/data" wasted 
 #pwd/downloads/logan.log - creates a new file in host machine #/app/data - location in or of the container
 
+OR BY BIND
+*docker run --mount type=bind,src=$(pwd),dst=/mydir yt-dlp https://www.youtube.com/watch?v=saEpkcVi1d4
+
 
 Most used commands:​
   command 	                                   explain     	                                shorthand
