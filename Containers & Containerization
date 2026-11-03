@@ -206,6 +206,15 @@ basic syntax : docker run -v "$(pwd)/downloads/logan.log:/app/data" wasted
 
 OR BY BIND
 *docker run --mount type=bind,src=$(pwd),dst=/mydir yt-dlp https://www.youtube.com/watch?v=saEpkcVi1d4
+# This method means bind a file in a container to another file in the host computer
+src=$(pwd) #source file in the host computer to be bound to the container
+dst=/mydir #destination file in the container to be bound to the source file
+yt-dlp #image
+
+*docker run --mount type=bind,src=$(pwd)/service.log,dst=/usr/src/app/text.log devopsdockeruh/simple-web-service
+#the image devopsdockeruh... prints a log message every two seconds to  ../app/text.log normally
+# so this bind line, binds src=$(pwd)/service.log (a file in local machine) to the dst=/usr/src/app/text.log thats being populated every two seconds.
+
 
 
 Most used commands:​
