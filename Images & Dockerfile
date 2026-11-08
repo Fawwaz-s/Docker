@@ -4,6 +4,9 @@ An image and a container runtime (Docker engine) are needed to create a containe
  #  The image provides all the necessary instructions and dependencies for the container to run. 
  # A Docker image is a file. An image never changes; you can not edit an existing file. 
  # Creating a new image happens by starting from a base image and adding new layers to it. 
+--Pre-built programming language Docker images, such as those for Ruby and Python, are Docker images that come with a specific programming language
+and its runtime environment already installed and configured. 
+
 DOCKERFILE
 Dockerfile = Instructions for building a completely self-contained, portable computer environment.
 You define what should be included in the image with different instructions. We'll learn about the best practices here by creating one.
