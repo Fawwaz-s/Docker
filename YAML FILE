@@ -1,0 +1,131 @@
+A YAML file is a text file used to store configuration settings and instructions in a structured, human-readable format.
+YAML usage
+GitHub Actions - Define automated workflows
+Docker Compose - Define and configure multiple containers
+Kubernetes - Define deployments, services and other resources
+Ansible - Define automation and configuration tasks
+
+Important YAML syntax rules
+- Indentation matters. Use spaces, not tabs.
+- A colon : separates a key from its value.
+- A dash - represents an item in a list.
+- # introduces a comment.
+- YAML files commonly use .yaml or .yml extensions.
+
+FOR YAML FILES: The Four Automatic Default Filenames
+When you run docker compose up without specifying a file, Docker automatically looks in your current directory for one of four filenames in this exact order of preference:
+compose.yaml (Current official preferred standard), compose.yml, docker-compose.yaml (Legacy name, kept for backwards compatibility),  
+docker-compose.yml (Legacy name, kept for backwards compatibility)  # Note: .yaml and .yml are the exact same file format; 
+.yaml is just the official extension recommended by the YAML specification.)If both compose.yaml and docker-compose.yaml exist in the same folder,
+Docker will prioritize compose.yaml.
+
+- You can name your file anything you want—such as compose.dev.yaml, compose.prod.yaml, or my-app.yaml. Because Docker won't detect custom names automatically,
+you simply pass the -f (--file) flag when running commands:   *docker compose -f compose.prod.yaml up -d
+
+BUILD
+build can be written in two ways: short syntax (a simple string) or long syntax (a detailed object with sub-options).
+- Short Syntax, When passed as a single string, Docker treats that value as the build context (the folder containing your code)
+and looks for a file named Dockerfile at the root of that folder:   
+YAML
+services:
+  frontend:
+    build: .  # Path to directory (can also be ./frontend or a Git URL)
+
+- Long Syntax (All Sub-Options)
+When you need more control—such as custom Dockerfile names, build-time variables, or multi-stage targets—you expand build into an object:
+services:
+  frontend:
+    image: my-react-app:1.0
+    build:
+      # 1. Context & Dockerfile Location
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      dockerfile_inline: |
+        FROM node:20-alpine
+        CMD ["echo", "Inline Dockerfile instead of a file"]
+
+      # 2. Build-Time Variables & Secrets
+      args:
+        NODE_ENV: production
+        API_URL: https://api.example.com
+      secrets:
+        - npm_token
+      ssh:
+        - default
+
+      # 3. Multi-Stage Builds & Platforms
+      target: development
+      platforms:
+        - linux/amd64
+        - linux/arm64
+
+      # 4. Caching & Rebuild Behavior
+      cache_from:
+        - my-react-app:cache
+      cache_to:
+        - type=inline
+      no_cache: false
+      pull: true
+
+      # 5. Networking, Metadata & System Limits
+      network: host
+      extra_hosts:
+        - "local.api:127.0.0.1"
+      labels:
+        com.example.description: "React Frontend"
+      shm_size: '2gb'
+      ulimits:
+        nofile:
+          soft: 65536
+          hard: 65536
+      isolation: default
+      tags:
+        - my-react-app:latest
+
+Breakdown of Every build Option
+Core Paths & Files:
+- context (Required in long syntax): Path to the directory (relative to the Compose file) or a Git repository URL whose contents are sent to 
+the Docker daemon during the build.
+- dockerfile: Alternate path or filename for the Dockerfile, resolved relative to context (e.g., Dockerfile.prod).  
+- dockerfile_inline: Lets you write raw Dockerfile instructions directly inside your compose.yaml instead of creating a separate file on disk. 
+Cannot be used together with dockerfile.
+
+Variables, Secrets & Authentication
+- args: Key-value pairs (or a list like KEY=VALUE) passed to ARG instructions inside your Dockerfile. Unlike environment (which sets runtime variables), 
+args exist only during the image build.   
+- secrets: Grants the build process secure access to sensitive files or environment variables (defined in a top-level secrets: block) without baking them into 
+the final image layers.
+- ssh: Passes SSH agent sockets or keys into the builder so RUN commands can clone private Git repositories securely.
+
+Multi-Stage & Multi-Architecture
+- target: Stops the build at a specific named stage (FROM ... AS <stage_name>) in a multi-stage Dockerfile. 
+Very useful for sharing one Dockerfile between a development target and a production target.   
+- platforms: List of target OS/CPU architectures (e.g., linux/amd64, linux/arm64) to cross-compile for using Buildx.
+
+Cache & Pull Control
+- cache_from / cache_to: External images or registry locations used to import/export layer caches—commonly used to speed up builds in CI/CD pipelines.
+- no_cache: Boolean (true/false). Forces Docker to build every layer from scratch without reusing local cache.
+- pull: Boolean (true/false). Forces Docker to always download the newest version of base images (FROM ...) before building.
+
+Network, Metadata & Resource Limits
+- network: Sets the network mode for RUN instructions during the build (e.g., host, none, or a custom network).
+- extra_hosts: Adds custom hostname-to-IP mappings to /etc/hosts inside the build container.
+- labels / tags: Attaches OCI metadata labels or additional image tags to the resulting image.  
+- shm_size: Sets the size of /dev/shm (shared memory) during the build—helpful if headless browsers or compilers run out of memory during builds.
+- ulimits: Overrides default container resource limits (like max open files nofile) during the build.
+- additional_contexts: Maps named extra directories or images so your Dockerfile can copy files from outside the primary context folder (COPY --from=shared_lib ...).
+
+Important CLI Behavior to Remember
+Compose only builds an image automatically if it doesn't exist locally yet. If you edit your Dockerfile or source code later, 
+running docker compose up alone will reuse the old image. To apply changes, run: 
+'*docker compose up --build (rebuilds images and restarts containers)  
+'*docker compose build (rebuilds images without starting containers)  
+
+Using a ready image with Docker Compose
+Using a ready made image means build is skipped, the yaml file will be like:
+services:
+  nginx:
+    image: nginx:1.29
+  database:
+    image: postgres:18 
+#Both of the containers can now be started with command docker compose up
