@@ -1,0 +1,97 @@
+Docker Compose is a tool that lets you define and run a multi-container application using a single YAML file, instead of typing a long `docker run` command for every 
+container. You describe all your services (frontend, backend, database, etc.) in one `compose.yaml` file, and then a single command starts everything together .
+
+A Compose file is organized around three main top-level sections :
+Section	                              What it defines                                                                                                 	Example
+services   	The containers that make up your app. Each service has a name, an image (or a build path), ports, environment variables, and volumes.   	web, db, api
+networks	  Virtual networks that connect services. Services on the same network can reach each other by service name (Docker's built-in DNS).	    front-tier, back-tier
+volumes	    Persistent storage that survives container restarts. Defined at the top level, then attached to a service.                                  	db-data
+
+ Essential Commands
+Command	                                              What it does
+docker compose up                             	Creates and starts all services (attached). Add -d for background .
+docker compose up --build	                      Rebuilds images before starting (use after changing a Dockerfile or code) .
+docker compose down	                            Stops and removes containers and networks. Volumes survive .
+docker compose down -v	                        Also deletes named volumes — data loss .
+docker compose ps	                              Shows the status of running services .
+docker compose logs -f      	                  Streams logs from all services (or name one: logs -f backend) .
+docker compose exec <service> <cmd>	            Runs a command inside a running container .
+
+Here's a minimal example with a frontend and a backend:
+
+``` a simple yaml file
+services:
+  yt-dlp-ubuntu:
+    image: <username>/<repositoryname>
+    build: .
+```
+
+FOR YAML FILES: The Four Automatic Default Filenames
+When you run docker compose up without specifying a file, Docker automatically looks in your current directory for one of four filenames in this exact order of preference:
+compose.yaml (Current official preferred standard), compose.yml, docker-compose.yaml (Legacy name, kept for backwards compatibility),  
+docker-compose.yml (Legacy name, kept for backwards compatibility)  #(Note: .yaml and .yml are the exact same file format; 
+.yaml is just the official extension recommended by the YAML specification.)If both compose.yaml and docker-compose.yaml exist in the same folder,
+Docker will prioritize compose.yaml.
+
+- You can name your file anything you want—such as compose.dev.yaml, compose.prod.yaml, or my-app.yaml. Because Docker won't detect custom names automatically,
+you simply pass the -f (--file) flag when running commands:   *docker compose -f compose.prod.yaml up -d
+................................................................................
+The Uni Helsinki project where frontend container stored in 1_12/ is used to connect with backend in 1_13/. in 1_14/, it copies directly from 1_12 and 1_13 to create a docker image 
+with * docker build -t frontend -f Dockerfile.frontend .. # 2 build commands are run for Dockf.frontend and Dockf.backend # .. means to the image to the parent directory.
+then two docker run commands is used for each frontend and backend * docker run -p 5001:5001 frontend *docker run -p 8080:8080 backend
+
+In this exercises you had to:
+1. Build each image separately with `docker build`.
+2. Run each container separately with `docker run`, remembering the right `-p` flags and `ENV` values each time.
+3. Manually create a network if you wanted the containers to talk to each other by name.
+
+With Compose, all of that is declared once in the YAML:
+- `build:` tells Compose to build the image from your Dockerfile (no separate `docker build` step).
+- `ports:` replaces the `-p` flag.
+- `environment:` replaces the `-e` flag (and is applied at container runtime).
+- Compose automatically creates a network, so `backend` resolves to the backend container's IP.
+
+Two Things to Watch
+'*depends_on' controls start order, not readiness. If the backend takes 10 seconds to boot, '*depends_on' only makes sure the container has started, not that the app inside is ready.
+For that you need a '*healthcheck' with '*condition: service_healthy'.
+
+The ENV in your Dockerfile vs. environment: in Compose. The Dockerfile ENV is a build-time default; Compose's environment: overrides it at runtime. 
+For React's REACT_APP_* variables, the value must be set at build time (in the Dockerfile, before npm run build), because CRA bakes it into the JS bundle.
+Setting it in Compose's environment: would be too late — the bundle is already compiled.
+
+--the yaml file will be
+services:
+  frontend:
+    build:
+      context: ..
+      dockerfile: 1_14/Dockerfile.frontend
+    ports:
+      - "5001:5001"
+
+  backend:
+    build:
+      context: ..
+      dockerfile: 1_14/Dockerfile.backend
+    ports:
+      - "8080:8080"
+
+NOTE: Then *docker compose up --build from 1_14/ would replace both docker build commands and both docker run commands. 
+The context: .. mirrors the .. in your docker build — it's needed so the Dockerfiles can COPY 1_12 and COPY 1_13 from the parent directory.
+
+ How Services Talk to Each Other
+Inside a Compose network, **you don't use `localhost` or IP addresses** to reach another service. You use the **service name** as the hostname .
+- If the frontend container needs to call the backend, it uses `http://backend:8080` (where `backend` is the service name).
+- Compose creates a DNS entry for each service, so the name resolves to the right container IP automatically.
+- This works only for **container-to-container** traffic. The **browser** (on your host machine) still uses `localhost:<published_port>` to reach the services.
+
+`REACT_APP_BACKEND_URL` is baked into the frontend and used by the **browser**, so it must point to a host-published port. 
+But if the frontend container itself were making a server-side request to the backend, it would use the **service name**.
+
+Command	What it does
+docker compose up	Creates and starts all services (attached). Add -d for background .
+docker compose up --build	Rebuilds images before starting (use after changing a Dockerfile or code) .
+docker compose down	Stops and removes containers and networks. Volumes survive .
+docker compose down -v	Also deletes named volumes — data loss .
+docker compose ps	Shows the status of running services .
+docker compose logs -f	Streams logs from all services (or name one: logs -f backend) .
+docker compose exec <service> <cmd>	Runs a command inside a running container .
