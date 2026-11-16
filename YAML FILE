@@ -11,6 +11,15 @@ Important YAML syntax rules
 - A dash - represents an item in a list.
 - # introduces a comment.
 - YAML files commonly use .yaml or .yml extensions.
+e.g 
+services: 
+  webster: #name of the service, it can be anything
+    image: devopsdockeruh/simple-web-service  #ready-made image that will be pulled
+    build: . #build destination
+    volumes: 
+    - ./log.txt:/usr/src/app/text.log 
+    container_name: logger #name of the container
+#webster should be indented to services, image, build, volumes should be indented to webster. 
 
 FOR YAML FILES: The Four Automatic Default Filenames
 When you run docker compose up without specifying a file, Docker automatically looks in your current directory for one of four filenames in this exact order of preference:
