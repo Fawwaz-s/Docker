@@ -16,6 +16,7 @@ docker compose down -v	                        Also deletes named volumes — da
 docker compose ps	                              Shows the status of running services .
 docker compose logs -f      	                  Streams logs from all services (or name one: logs -f backend) .
 docker compose exec <service> <cmd>	            Runs a command inside a running container .
+docker compose config                           used to test the yaml file before running for errors
 
 Here's a minimal example with a frontend and a backend:
 
