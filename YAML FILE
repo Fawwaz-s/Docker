@@ -15,7 +15,7 @@ e.g
 services: 
   webster: #name of the service, it can be anything
     image: devopsdockeruh/simple-web-service  #ready-made image that will be pulled
-    build: . #build destination
+    build: . #usually its either build or image but if both docker uses the local dockerfile in . instead of pulling from the internet
     volumes: 
     - ./log.txt:/usr/src/app/text.log 
     container_name: logger #name of the container
