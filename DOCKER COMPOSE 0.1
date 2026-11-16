@@ -22,19 +22,10 @@ Here's a minimal example with a frontend and a backend:
 ``` a simple yaml file
 services:
   yt-dlp-ubuntu:
-    image: <username>/<repositoryname>
-    build: .
+    image: <username>/<repositoryname>  # 
+    build: .   # . for current directory 
 ```
 
-FOR YAML FILES: The Four Automatic Default Filenames
-When you run docker compose up without specifying a file, Docker automatically looks in your current directory for one of four filenames in this exact order of preference:
-compose.yaml (Current official preferred standard), compose.yml, docker-compose.yaml (Legacy name, kept for backwards compatibility),  
-docker-compose.yml (Legacy name, kept for backwards compatibility)  #(Note: .yaml and .yml are the exact same file format; 
-.yaml is just the official extension recommended by the YAML specification.)If both compose.yaml and docker-compose.yaml exist in the same folder,
-Docker will prioritize compose.yaml.
-
-- You can name your file anything you want—such as compose.dev.yaml, compose.prod.yaml, or my-app.yaml. Because Docker won't detect custom names automatically,
-you simply pass the -f (--file) flag when running commands:   *docker compose -f compose.prod.yaml up -d
 ................................................................................
 The Uni Helsinki project where frontend container stored in 1_12/ is used to connect with backend in 1_13/. in 1_14/, it copies directly from 1_12 and 1_13 to create a docker image 
 with * docker build -t frontend -f Dockerfile.frontend .. # 2 build commands are run for Dockf.frontend and Dockf.backend # .. means to the image to the parent directory.
@@ -87,11 +78,45 @@ Inside a Compose network, **you don't use `localhost` or IP addresses** to reach
 `REACT_APP_BACKEND_URL` is baked into the frontend and used by the **browser**, so it must point to a host-published port. 
 But if the frontend container itself were making a server-side request to the backend, it would use the **service name**.
 
-Command	What it does
-docker compose up	Creates and starts all services (attached). Add -d for background .
-docker compose up --build	Rebuilds images before starting (use after changing a Dockerfile or code) .
-docker compose down	Stops and removes containers and networks. Volumes survive .
-docker compose down -v	Also deletes named volumes — data loss .
-docker compose ps	Shows the status of running services .
-docker compose logs -f	Streams logs from all services (or name one: logs -f backend) .
-docker compose exec <service> <cmd>	Runs a command inside a running container .
+
+VOLUMES
+In Docker Compose, a volume is how you handle data that needs to outlive a container. When a container is deleted and recreated, any data written to its internal filesystem vanishes with it. Volumes give that data a home outside the container's lifecycle, so databases don't lose their tables, and configuration files survive a restart.
+There are two main types you'll encounter, and they behave very differently.
+Type           	Syntax in compose.yaml      	Who Manages It    	  Where Data Lives	                            Best For
+Named Volume	     my-data:/var/lib/data	        Docker	        Docker's storage area (hidden)	          Databases, persistent app state 
+Bind Mount      	./local-dir:/app/dir	           You       	   A folder you choose on your host	         Development (live code reload), config files   
+
+Named volumes are declared in the top-level volumes: section of your Compose file. Docker creates and manages the actual storage location, so you don't need to worry about host path conflicts or permissions. They are the recommended choice for production data because they survive docker compose down (unless you add the -v flag) .
+Remember this distinction, because it's the most common way people accidentally delete data:
+docker compose down → Stops and removes containers, but keeps named volumes .
+docker compose down -v → Stops and removes containers and deletes named volumes (data loss) .
+Bind mounts are never deleted by Docker commands—they are just folders on your host, so they're only removed if you delete them yourself.
+
+Bind mounts create a direct link between a folder on your host machine and a path inside the container. Changes on your host appear instantly in the container, which is why they're perfect for editing code during development. However, they depend on the host's directory structure and can run into permission issues if the container's user ID doesn't match your host user's ID .
+
+
+Use a volume with Docker Compose
+The following example shows a single Docker Compose service with a volume: yaml file
+services:
+  yt-dlp-ubuntu:
+    image: <username>/<repositoryname>
+    build: .
+    volumes:
+      - .:/mydir # directory to use
+    container_name: yt-dlp 
+#The service name can be used to run the container:
+  *docker compose run yt-dlp-ubuntu https://www.youtube.com/watch?v=saEpkcVi1d4 #downloads a youtube video
+    
+Running '*docker compose up for the first time creates a volume. Docker reuses the same volume when you run the command subsequently.
+
+
+Command	                                  What it does
+docker compose up                              	Creates and starts all services (attached). Add -d for background .
+docker compose up --build	                      Rebuilds images before starting (use after changing a Dockerfile or code) .
+docker compose down                            	Stops and removes containers and networks. Volumes survive .
+docker compose down -v	                         Also deletes named volumes — data loss .
+docker compose ps	                              Shows the status of running services .
+docker compose logs -f                         	Streams logs from all services (or name one: logs -f backend) .
+docker compose exec <service> <cmd>	            Runs a command inside a running container .
+
+
