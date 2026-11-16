@@ -99,14 +99,12 @@ Bind mounts create a direct link between a folder on your host machine and a pat
 Use a volume with Docker Compose
 The following example shows a single Docker Compose service with a volume: yaml file
 services:
-  yt-dlp-ubuntu:
-    image: <username>/<repositoryname>
+  webster:
+    image: devopsdockeruh/simple-web-service
     build: .
     volumes:
-      - .:/mydir # directory to use
-    container_name: yt-dlp 
-#The service name can be used to run the container:
-  *docker compose run yt-dlp-ubuntu https://www.youtube.com/watch?v=saEpkcVi1d4 #downloads a youtube video
+    - ./log.txt:/usr/src/app/text.log # ./log.txt is the destination, /usr/src/app/text.log is the source #this one takes logs from inside the container to give outside
+    container_name: logger
     
 Running '*docker compose up for the first time creates a volume. Docker reuses the same volume when you run the command subsequently.
 
