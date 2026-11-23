@@ -138,3 +138,27 @@ services:
   database:
     image: postgres:18 
 #Both of the containers can now be started with command docker compose up
+--------------------------------------------------------------------------------
+WORKING WITH COMMANDS IN yaml
+- To run a command after build
+services:
+  baddolee:
+    image: devopsdockeruh/simple-web-service
+    ports:
+      - "8080:8080"
+    command: server #server tells Docker Compose to start the container by running the program called server inside the image.
+
+-to use entrypoint. This clears the image's CMD and replaces the executable. You usually pair it with a new command.
+services:
+  my-app:
+    image: my-custom-image
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["echo hello"]
+
+- to clear the entrypoint entirely. Use an empty array. This is useful for debugging or when you just want to run a plain command.
+services:
+  my-app:
+    image: my-custom-image
+    entrypoint: []
+    command: ["ls", "-la"]
+
