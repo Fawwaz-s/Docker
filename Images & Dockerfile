@@ -38,6 +38,15 @@ more examples
 aws ecr get-login-password | docker login --username AWS --password-stdin 123.dkr.ecr.us-east-1.amazonaws.com
 docker pull 123.dkr.ecr.us-east-1.amazonaws.com/myapp:prod # Get a private image from AWS ECR
 
+TO ACCESS THE DOCKERFILE CONFIG OF A PULLED DOCKER IMAGE:
+* docker history --no-trunc <image-name> 
+# --no-trunc prevents Docker from cutting off long RUN or CMD commands so you can read the full instructions.
+# What it gives you: The RUN, COPY, ENV, EXPOSE, ENTRYPOINT, and CMD commands used to build the image.
+# What it misses: Comments, exact FROM base image names (usually shown as layer hashes or empty base layers), .dockerignore rules, and build-time ARG values.
+
+* docker inspect <image-name>
+# to see the exact environment variables, working directory, exposed ports, or startup command (Cmd / Entrypoint) baked into the image
+
 --docker push: is a command that uploads a Docker image from your local machine to a container registry (like Docker Hub, Amazon ECR, Google Container Registry, etc.). 
 It's how you share your images with others or make them available for deployment.
 Syntax: docker push [OPTIONS] NAME[:TAG] #eg. docker push username/myapp:v1
