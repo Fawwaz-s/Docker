@@ -55,15 +55,15 @@ Setting it in Compose's environment: would be too late — the bundle is already
 services:
   frontend:
     build:
-      context: ..
-      dockerfile: 1_14/Dockerfile.frontend
+      context: ../example-app #context points to the directory with the dependencies, this one is a directory under the parent directory hence the ..
+      dockerfile: frontend/Dockerfile.frontend #the Dockerfile is in a directory called frontend, same logic for backend.
     ports:
       - "5001:5001"
 
   backend:
     build:
-      context: ..
-      dockerfile: 1_14/Dockerfile.backend
+      context: ../example-app
+      dockerfile: backend/Dockerfile.backend #same logic for frontend
     ports:
       - "8080:8080"
 
