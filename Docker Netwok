@@ -1,0 +1,160 @@
+In Docker, a network is a virtual communication environment that allows containers to communicate with each other and, depending on its configuration, with external networks.
+Docker gives every container its own network namespace — its own IP, gateway, and DNS resolver. 
+Networking is about two separate questions: 
+- Can container A reach container B? # depends on whether they share a user-defined network.
+- Can the host or the outside world reach the container? #depends on whether you publish ports (-p).
+These are two different issues, Containers on the same network reach each other on any port without -p & Publishing a port only affects access from the host/outside.
+
+
+Network Drivers # Network driver = the technology used to create the virtual communication environment defined above.
+Docker Engine has a number of network drivers, as well as the default "bridge". On Linux, the following built-in network drivers are available:
+Driver                       	What It Does	                                                                                 When to Use
+bridge (default)	   Isolated network with NAT. Containers get IPs.	                                Almost everything on a single host. But always use a user-defined bridge, not the default.
+host           	Remove network isolation between the container and the Docker host.       Performance-critical apps, or when you need direct access to host interfaces.
+                                                                                            Host mode removes isolation—the container can bind any host port and see all host traffic .
+none	                   No network at all.	                                                            Batch jobs that need no network, or maximum isolation.
+overlay      	Connects multiple Docker daemons across machines.	                                          Docker Swarm services spanning hosts.
+macvlan	          Container gets its own MAC address on the LAN.	                                       Legacy apps that expect to be a physical device.
+ipvlan	Connect containers to external VLANs.
+
+NOTE:
+#When you start containers without specifying a network, Docker normally attaches them to the default bridge network. eg * docker run -d --name frontend nginx
+#User-defined bridge network: same bridge network but created by you * docker network create my-network 
+   #then you attach containers to it * docker run -d --name frontend --network my-network nginx 
+Support note: If a container uses *"network_mode: host" in Compose, service-name DNS does not work. The container is on the host network and cannot resolve other Compose services by name.
+
+Essential Commands and Flags
+Create a user-defined network:
+*docker network create my-net
+#This is the single most important fix for DNS issues between containers.
+
+With options:
+*docker network create --driver bridge --subnet 172.28.0.0/16 --gateway 172.28.0.1 --internal my-net
+Command / option	                   Meaning
+docker network create	      Creates a new Docker network.
+--driver bridge           	Uses the bridge network driver.
+--subnet 172.28.0.0/16	    Defines the IP address range available to containers.
+--gateway 172.28.0.1	      Defines the gateway IP address for that network.
+--internal	                Restricts external connectivity for the network.
+my-net	                    Name assigned to the network.
+
+Understanding the subnet
+172.28.0.0/16 defines an IP address range.
+For example, containers connected to this network could receive addresses such as:
+- 172.28.0.2 or 172.28.0.3 or 172.28.0.4  #The gateway 172.28.0.1 is the network's gateway address.
+
+What does --internal do?
+It creates an internally isolated network. Containers can communicate with each other, but the network does not provide normal external connectivity.
+For example, a backend and database could communicate internally without needing internet access.
+--internal: Blocks outbound internet access. Useful for a database tier that should not phone home.
+
+Run a container on a network:
+* docker run --network my-net --name backend my-image  #Starts a container on that network
+   # --network my-net	- Connects the container to my-net.
+   # --name backend	Names the container backend.
+   # my-image	Image used to create the container.
+#The container is connected to my-net from the moment it starts.
+       Because this is a user-defined bridge network, other containers on that network can reach it using its name: http://backend:8080
+       Assuming the application listens on port 8080.
+* docker network connect my-net backend #docker network connect: connects an already-existing container, backend to an additional network.
+* docker network connect --alias db my-net my-container # This does the same thing as the previous command, but adds a network-specific DNS alias.
+# Other containers on my-net can now reach it using: db
+A container can be on multiple networks simultaneously. This is useful for a backend that needs to talk to both a frontend network and an isolated database network.
+
+Inspect
+* docker network inspect my-net # Shows which containers are connected, their IPs, and the network's subnet.
+Publish a port (inbound access only):
+docker run -p 127.0.0.1:8080:8080 my-image  #The 127.0.0.1: prefix binds only to loopback, which is safer for local development. 
+ #Plain -p 8080:8080 binds to 0.0.0.0 (all interfaces) and can bypass host firewalls like ufw.
+ #For support, if a user says "I can reach it locally but not from another machine," the issue may be that they bound to 127.0.0.1 instead of 0.0.0.0.
+
+Inbound vs. Outbound: Two Different Problems
+--Outbound (container → external API/database):
+Works by default on bridge networks via NAT. No special flags needed. If it fails, the problem is almost always host-level networking: 
+firewall rules blocking outbound traffic, a VPN that changes DNS servers, or a private subnet that the host cannot route to .
+
+Diagnostic sequence for outbound failures:
+*docker exec <container> ping 8.8.8.8 #tests raw IP connectivity.
+*docker exec <container> cat /etc/resolv.conf #checks what DNS server the container is using. If it shows 127.0.0.53,
+  that's the systemd-resolved stub and it won't work from inside the container .
+*docker exec <container> nslookup google.com 8.8.8.8 #tests DNS against a known-good server.
+
+--Inbound (outside → container):
+Requires -p. The browser on the host reaches the container at localhost:<published_port>. This is the path used for web applications. 
+Container-to-container traffic does not use this path.
+
+Compose Networking
+Compose creates a default user-defined network for the project automatically. This is why services can reach each other by service name (backend, frontend) out of the box.
+
+Custom networks in Compose:
+services:
+  frontend:
+    networks:
+      - app-net
+    ports:
+      - "127.0.0.1:5001:5001"
+
+  backend:
+    networks:
+      - app-net
+      - db-net
+    ports:
+      - "127.0.0.1:8080:8080"
+
+networks:
+  app-net:
+  db-net:
+    internal: true
+#Services on the same network resolve each other by service name.
+#internal: true creates a network with no external connectivity—useful for database tiers .
+#A service connected to both an internal and a non-internal network can still reach the internet via the non-internal one .
+
+Important Compose behavior: When you run docker compose up after a configuration change, the old container is removed and,
+the new container joins the network with the same name but a different IP. Running containers that have open connections to the old container will have those connections closed. 
+They must re-resolve the name and reconnect . This can cause transient failures during deployments—important to know for support.
+
+Support Scenarios and Quick Diagnostics # () IS THE LIKELY CAUSE
+- Container A can't reach Container B by name	 (They are on the default bridge, not a user-defined network)	*FIX: Create a user-defined network and attach both containers
+- Browser can't reach backend at http://backend:8080	(The browser is not on the Docker network; it needs a host-reachable URL) *FIX: Use http://localhost:8080 (with the backend port published)
+- Container can't resolve external hostnames	(Host's /etc/resolv.conf points to 127.0.0.53 (systemd-resolved stub))	*FIX: Configure Docker to use upstream DNS servers in daemon.json, or pass --dns per container 
+- Port published but unreachable from other machines	(Bound to 127.0.0.1 instead of 0.0.0.0) *FIX:	Change to -p 8080:8080 (or explicitly bind to the correct interface)
+- Compose service can't reach another after up	(Container was recreated with a new IP; cached connections are stale) *FIX:	Restart the dependent service, or ensure the app re-resolves DNS on connection failure
+
+Useful diagnostic commands:
+docker exec <container> cat /etc/resolv.conf          # What DNS server is the container using?
+docker exec <container> ping -c 2 <other-container>   # Does name resolution work?
+docker exec <container> nslookup google.com            # Does external DNS work?
+docker network inspect <network>                       # Who is on this network, with what IPs?
+docker port <container>                                # What ports are published?
+
+The One-Sentence Summary
+Docker networking is two separate problems: 
+- container-to-container reachability (solved by putting containers on a user-defined network, which provides automatic DNS by container name)
+- host-to-container reachability (solved by publishing ports, ideally bound to 127.0.0.1 for local safety); outbound traffic works by default via NAT,
+but browser-based applications must use host-reachable URLs because the browser is never on the Docker network.
+
+
+###How Docker DNS Works #DNS is where most Docker networking problems occur. 
+Docker runs an embedded DNS server at 127.0.0.11 inside every container on a user-defined network . When a container tries to resolve a name (e.g., backend), 
+the request goes to this embedded server first.
+- On a user-defined bridge network, Docker's embedded DNS resolves container names and network aliases automatically . If you start a container with --name backend, 
+any other container on the same network can reach it at http://backend:8080.
+- On the default bridge network, there is no automatic DNS for container names. Containers can only reach each other by IP address . 
+This is the single most common cause of "container A can't reach container B" issues. The default bridge is considered a legacy detail and is not recommended for production .
+
+For external DNS (resolving google.com or an external API hostname), containers on user-defined networks forward requests to the host's configured DNS servers via the embedded resolver . 
+If the host can resolve it, the container usually can too—unless the host uses systemd-resolved with the stub listener 127.0.0.53, which is not reachable from inside containers. 
+In that case, you need to configure Docker to use the real upstream DNS servers instead .
+
+The Browser-vs-Container Trap (Critical for Support)
+This is the most frequent misunderstanding in full-stack Docker setups, and you will encounter it in support tickets.
+When a browser (on the user's machine) accesses a web application served by a container, the browser is not on the Docker network.
+It is on the host or on a remote machine entirely. Therefore:
+- A service name like http://backend:8080 will not work in the browser. That name only resolves inside the Docker network .
+- The browser must use a host-reachable address: http://localhost:8080 (if the backend port is published) or the host's IP/hostname.
+
+The same applies to any JavaScript running in the browser. The frontend container's job is only to serve static files; the code executes in the browser,
+and its API calls originate from the user's machine, not from the frontend container .
+
+Rule for support: If a user reports "the frontend can't reach the backend," ask: Is the failing request coming from the browser (visible in DevTools Network tab) or 
+from server-side code inside a container? If it's from the browser, the URL must be host-reachable, not a Docker service name.
