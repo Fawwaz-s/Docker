@@ -1,0 +1,113 @@
+Docker Compose flags fall into two categories: 
+- global flags that apply to any subcommand (like -f or -p)
+- command-specific flags that only work with a particular subcommand (like up --build or down -v).
+
+= Global Flags (apply to any docker compose command)
+These come before the subcommand, e.g. docker compose -f custom.yaml -p myproj up.
+
+Flag	                    What it does	Support relevance
+-f, --file <path>      Specifies the Compose file to use. Can be repeated to merge multiple files (later files override earlier ones).  
+  Also supports oci:// registry artifacts and git URLs. -- USECASES: Critical when a project uses non-default filenames or override files (docker-compose.override.yml). 
+    If a user says "my changes aren't taking effect," check which file is actually being loaded.
+-p, --project-name <name>	    Sets the project name, which prefixes all containers, networks, and volumes.	-- USECASES: If two projects have the same service names, 
+  they collide unless project names differ. This is why docker compose down in one directory doesn't affect another.
+--profile <name>	        Enables optional services tagged with that profile in the YAML .	  
+     --USECASES: Some services (e.g., debug tools, monitoring) are only started when their profile is active. "Why isn't service X running?" → check its profile.
+--parallel <n>	       Limits concurrent engine calls/builds .	--USECASES: Rarely needed in support, but useful when builds overwhelm a machine.
+--dry-run	             Shows what would happen without executing.	Safe way to preview a destructive command.
+
+= Command Specific flags
+* docker compose up — Create and Start
+The most-used command. Flags control whether to rebuild, run detached, and how to handle dependencies.
+
+Flag	                           What it does
+-d, --detach	            Runs containers in the background and returns the terminal .
+--build	                  Forces a rebuild of images before starting, even if a cached image exists . Use after changing a Dockerfile or source code.
+--no-build	              Never build; fail if the image doesn't exist locally .
+--force-recreate	        Recreates containers even if their configuration hasn't changed . Useful when a container is in a bad state.
+--no-recreate	            If a container already exists, don't recreate it .
+--no-deps                 Don't start linked/dependency services . Useful when you only want one service and its dependencies are already running.
+--remove-orphans     	    Removes containers for services no longer defined in the Compose file . Fixes "stale container" issues after editing the YAML.
+--pull <policy>	          always, policy, or never — controls whether to pull newer images .
+-V, --renew-anon-volumes	Recreates anonymous volumes instead of reusing them .
+
+Support scenario: User edits a service's environment in the YAML and runs docker compose up -d, but nothing changes.
+Cause: Compose reuses the existing container. Fix: docker compose up -d --force-recreate <service>.
+
+* docker compose down — Stop and Remove
+Tears down what up created. The flags control how much gets deleted.
+
+Flag	                                            What it does
+-v, --volumes	                          Removes named volumes declared in the volumes: section, plus anonymous volumes attached to containers .
+--rmi <type>	                          Removes images: local (only untagged images) or all (all images used by services) .
+--remove-orphans	                      Removes containers for services not in the Compose file .
+-t, --timeout <seconds>	                Shutdown timeout before SIGKILL (default 10s) .
+
+Critical warning for support: docker compose down -v deletes data. Named volumes survive a plain down, but -v removes them. If a user reports 
+"my database is empty after restart," ask whether they ran down -v or down --volumes. Also note: external networks and volumes are never removed by down.
+
+* docker compose build — Build or Rebuild Images
+Flag	                                What it does
+--no-cache	                   Disables the build cache; forces a full rebuild from source .
+--pull	                       Always attempts to pull a newer base image .
+--build-arg <key=value>	       Passes a build-time variable (same as Dockerfile ARG) .
+--parallel	                   Builds images in parallel .
+-q, --quiet	                   Suppresses build output .
+--push	                       Pushes service images after building .
+
+Support scenario: A Dockerfile change isn't reflected in the running container. docker compose up --build (or docker compose build --no-cache then up)
+forces the image to be regenerated.
+
+* docker compose run — One-off Tasks
+Different from up: it runs a single service for an ad-hoc command (tests, migrations, debugging) and does not start the full stack by default.
+
+Flag	                 What it does
+--rm	                       Removes the container after the command exits. Essential for one-off tasks so you don't accumulate dead containers.
+--no-deps	                   Doesn't start dependency services.
+-e, --env <key=value>	       Sets an environment variable for this run only.
+-T                          	Disables pseudo-TTY allocation (useful in scripts/CI).
+Key distinction from the Docker FAQ: up starts the whole project; run is for "one-off or adhoc tasks" and only starts dependencies of the named service .
+
+Quick Reference: Which Flag for Which Symptom
+Symptom	Likely                                                 flag fix
+"I changed the YAML but nothing changed"	                    up --force-recreate
+"I changed the Dockerfile but the container is old"	          up --build
+"My database is empty after restart"	                        Check for down -v — that's the cause
+"Stale containers from removed services"	                    down --remove-orphans or up --remove-orphans
+"Service isn't starting"                                 	    Check --profile — it may be optional
+"Wrong Compose file is being used"                          	-f <path> to specify explicitly
+"Two projects are colliding"	                                -p <unique-name>
+
+
+--scale is used to specify the number of container instances to run for a service, and it has two main usage scenarios in Docker Compose:
+as a flag for docker compose up / create, or as an independent docker compose scale command.
+
+Two Usage Methods
+1. As a flag for up or create
+Use --scale directly when starting services, in the format service=number:
+* docker compose up -d --scale backend=3
+This will start 3 container instances for the backend service. This flag overrides the scale setting in the Compose file.
+
+2. As an independent command
+Use docker compose scale to adjust the number of instances for already running services:
+
+* docker compose scale backend=3 frontend=2
+The usage is docker compose scale [SERVICE=REPLICAS...], supporting scaling of multiple services simultaneously.
+
+Key Restrictions (Important for Support)
+Cannot scale services with container_name specified. If a service in your Compose file has a fixed container_name (e.g., container_name: my-backend),
+Docker cannot create multiple containers with the same name. When attempting to scale, Docker will report a name conflict error.
+To use --scale, the service must not have container_name configured; instead, let Compose automatically generate names (format like project-service-1, project-service-2).
+
+Port mapping conflicts. If the service publishes a fixed host port (e.g., ports: - "8080:8080"), scaling multiple instances will cause port conflicts 
+because all instances try to bind to host port 8080. To scale, you need to either remove the fixed port mapping or use a port range (e.g., "8080-8082:8080").
+
+Practical Scenarios
+In support work, you may encounter users who want to run multiple backend instances to test load balancing. The troubleshooting sequence is:
+- Check if the service has container_name configured → if so, must remove it first.
+- Check if fixed host port mapping is used → if so, scaling will cause port conflicts.
+- Use docker compose up -d --scale <service>=<number> or docker compose scale <service>=<number>.
+- Use docker compose ps to confirm the number of instances, container names should be in the form <project>-<service>-<number>.
+
+In short, --scale is a tool for horizontally scaling service instances, but it is not compatible with fixed container names and fixed host port mappings.
+
