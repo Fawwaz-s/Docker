@@ -1,0 +1,60 @@
+By default, Docker Compose isolates each project on its own private network, so they cannot see each other. The solution is to manually create a shared network outside of 
+Compose and tell both Compose files to join it.
+
+Docker Compose creates a default network for every project it manages (usually named <project-name>_default). Services in different Compose projects end up on different networks 
+and are isolated from each other.
+To bridge them, you use the *"external" flag in the Compose file's networks section. This tells Compose: "Don't create a new network. Instead,
+look for an existing network that I've already created manually, and connect my services to it."
+
+SETTING UP FOR TWO YAML FILES
+* docker network create shared-net #this creates a new independent network
+---In the first yaml file : eg
+services:
+  backend:
+    image: my-backend
+    networks:
+      - shared-net
+networks:            #The top-level block where you declare custom networks that services in your Compose file can join.
+  shared-net:          #The Compose service or network key.
+    external: true   #tells Docker Compose not to create or delete shared-net during docker compose up or docker compose down. Instead,
+                     it expects the network to already exist on the Docker host. If it doesn't exist yet, Compose will fail with an error.
+    name: shared-net #not needed in this context.
+NOTE:
+- The network key is the label you define directly under the top-level networks It's an internal alias/handle for that Compose file.
+   If your Compose file has two networks, the key lets each service pick the right one.
+- The name field specifies the actual Docker network name that Docker uses on the host machine (the same name you see when you run docker network ls) or created with docker network create.
+If the actual Docker network on your machine is already named shared-net (the exact same string as your network key), you don't need "name:" Docker defaults to using the key name.
+NOTE:
+The external: true line is crucial. Without it, Compose will try to create a network named app-a_shared-net and fail because it doesn't match your manually created one.
+---In the second yaml : eg
+services:
+  frontend:
+    image: my-frontend
+    networks:
+      - shared-net
+networks:
+  shared-net:
+    external: true
+
+THEY WILL NOW BE ABLE TO INTERACT WHEN YOU RUN WITH *docker compose up
+NOTE:
+- When you see two Compose files, check the networks section of each. If they don't share an *"external: true" network with the same name, they won't communicate. 
+The fix is always: *"docker network create <name> + external: true "in both files.
+- The network must exist first: If you run docker compose up before creating the network, Compose will fail with a "network not found" error because 
+external: true tells it not to create the network, only to look for it.
+- DNS Works by Service Name: Once on the shared network, Docker's embedded DNS allows containers to resolve each other by their service name (e.g., backend),
+just as if they were in the same Compose file. You do not need to use IP addresses.
+- Cleanup: When you run docker compose down, Compose will disconnect the containers from the network but will not delete the shared-net network itself,
+because it is marked as external. You must remove it manually with *docker network rm shared-net  if you no longer need it.
+
+Alternatively
+If you just want to connect two projects temporarily without editing the YAML files, you can force them to share a project name.
+However, this is a hack and not recommended for a stable setup:
+# Start both with the same --project-name
+docker compose -f app-a/docker-compose.yml --project-name shared up -d
+docker compose -f app-b/docker-compose.yml --project-name shared up -d
+# This forces Docker to treat them as a single project, creating one shared default network. 
+It's messy and can cause conflicts, so the external network method above is the proper engineering solution.
+
+
+When you see two Compose files, check the networks section of each. If they don't share an external: true network with the same name, they won't communicate. The fix is always: docker network create <name> + external: true in both files.
