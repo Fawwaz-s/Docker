@@ -111,3 +111,20 @@ In support work, you may encounter users who want to run multiple backend instan
 
 In short, --scale is a tool for horizontally scaling service instances, but it is not compatible with fixed container names and fixed host port mappings.
 
+= The docker compose port command (
+This is a subcommand used to query an existing port mapping — it does not create or change anything. Usage :
+
+* docker compose port [OPTIONS] SERVICE PRIVATE_PORT # It tells you which host port is mapped to a given container port for a service .
+
+Options:
+Option	                               Default	Description
+--index		                  Container index when the service has multiple replicas e.g using --scale to create multiple same containers, queries them by their index no.
+--protocol	tcp	            tcp or udp 
+Why it matters for support: When a service uses a dynamic host port (e.g., ports: - "80" with no host side specified), Docker assigns a random host port on every up.
+You can't guess it from the YAML — you must query it :
+
+* docker compose port web 80
+# Output: 0.0.0.0:55432
+With --scale, each replica gets its own host port, so you need --index to query a specific one :
+* docker compose port --index=1 web 80
+
